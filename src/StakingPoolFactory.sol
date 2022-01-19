@@ -2,8 +2,10 @@
 pragma solidity ^0.8.11;
 
 import {ERC20} from "solmate/tokens/ERC20.sol";
+import {ERC721} from "solmate/tokens/ERC721.sol";
 
 import {ERC20StakingPool} from "./ERC20StakingPool.sol";
+import {ERC721StakingPool} from "./ERC721StakingPool.sol";
 import {ClonesWithCallData} from "./lib/ClonesWithCallData.sol";
 
 /// @title StakingPoolFactory
@@ -21,16 +23,24 @@ contract StakingPoolFactory {
     /// -----------------------------------------------------------------------
 
     event CreateERC20StakingPool(ERC20StakingPool stakingPool);
+    event CreateERC721StakingPool(ERC721StakingPool stakingPool);
 
     /// -----------------------------------------------------------------------
     /// Immutable parameters
     /// -----------------------------------------------------------------------
 
-    /// @notice The contract used as the template for all clones created
-    ERC20StakingPool public immutable implementation;
+    /// @notice The contract used as the template for all ERC20StakingPool contracts created
+    ERC20StakingPool public immutable erc20StakingPoolImplementation;
 
-    constructor(ERC20StakingPool implementation_) {
-        implementation = implementation_;
+    /// @notice The contract used as the template for all ERC721StakingPool contracts created
+    ERC721StakingPool public immutable erc721StakingPoolImplementation;
+
+    constructor(
+        ERC20StakingPool erc20StakingPoolImplementation_,
+        ERC721StakingPool erc721StakingPoolImplementation_
+    ) {
+        erc20StakingPoolImplementation = erc20StakingPoolImplementation_;
+        erc721StakingPoolImplementation = erc721StakingPoolImplementation_;
     }
 
     /// @notice Creates an ERC20StakingPool contract
@@ -54,10 +64,42 @@ contract StakingPoolFactory {
         }
 
         stakingPool = ERC20StakingPool(
-            address(implementation).cloneWithCallDataProvision(ptr)
+            address(erc20StakingPoolImplementation).cloneWithCallDataProvision(
+                ptr
+            )
         );
         stakingPool.initialize(msg.sender);
 
         emit CreateERC20StakingPool(stakingPool);
+    }
+
+    /// @notice Creates an ERC721StakingPool contract
+    /// @dev Uses a modified minimal proxy contract that stores immutable parameters in code and
+    /// passes them in through calldata. See ClonesWithCallData.
+    /// @param rewardToken The token being rewarded to stakers
+    /// @param stakeToken The token being staked in the pool
+    /// @param DURATION The length of each reward period, in seconds
+    /// @return stakingPool The created ERC721StakingPool contract
+    function createERC721StakingPool(
+        ERC20 rewardToken,
+        ERC721 stakeToken,
+        uint64 DURATION
+    ) external returns (ERC721StakingPool stakingPool) {
+        bytes memory ptr;
+        ptr = new bytes(48);
+        assembly {
+            mstore(add(ptr, 0x20), shl(0x60, rewardToken))
+            mstore(add(ptr, 0x34), shl(0x60, stakeToken))
+            mstore(add(ptr, 0x48), shl(0xc0, DURATION))
+        }
+
+        stakingPool = ERC721StakingPool(
+            address(erc721StakingPoolImplementation).cloneWithCallDataProvision(
+                ptr
+            )
+        );
+        stakingPool.initialize(msg.sender);
+
+        emit CreateERC721StakingPool(stakingPool);
     }
 }

@@ -3,16 +3,17 @@
 pragma solidity ^0.8.4;
 
 import {ERC20} from "solmate/tokens/ERC20.sol";
+import {ERC721} from "solmate/tokens/ERC721.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
 import {Ownable} from "./lib/Ownable.sol";
 import {FullMath} from "./lib/FullMath.sol";
 
-/// @title ERC20StakingPool
+/// @title ERC721StakingPool
 /// @author zefram.eth
-/// @notice A modern, gas optimized staking pool contract for rewarding ERC20 stakers
+/// @notice A modern, gas optimized staking pool contract for rewarding ERC721 stakers
 /// with ERC20 tokens periodically and continuously
-contract ERC20StakingPool is Ownable {
+contract ERC721StakingPool is Ownable {
     /// -----------------------------------------------------------------------
     /// Library usage
     /// -----------------------------------------------------------------------
@@ -27,14 +28,15 @@ contract ERC20StakingPool is Ownable {
     error Error_AlreadyInitialized();
     error Error_NotRewardDistributor();
     error Error_AmountTooLarge();
+    error Error_NotTokenOwner();
 
     /// -----------------------------------------------------------------------
     /// Events
     /// -----------------------------------------------------------------------
 
     event RewardAdded(uint256 reward);
-    event Staked(address indexed user, uint256 amount);
-    event Withdrawn(address indexed user, uint256 amount);
+    event Staked(address indexed user, uint256[] idList);
+    event Withdrawn(address indexed user, uint256[] idList);
     event RewardPaid(address indexed user, uint256 reward);
 
     /// -----------------------------------------------------------------------
@@ -42,6 +44,7 @@ contract ERC20StakingPool is Ownable {
     /// -----------------------------------------------------------------------
 
     uint256 internal constant PRECISION = 1e30;
+    address internal constant BURN_ADDRESS = address(0xdead);
 
     /// -----------------------------------------------------------------------
     /// Storage variables
@@ -61,6 +64,8 @@ contract ERC20StakingPool is Ownable {
 
     /// @notice Tracks if an address can call notifyReward()
     mapping(address => bool) public isRewardDistributor;
+    /// @notice The owner of a staked ERC721 token
+    mapping(uint256 => address) public ownerOf;
 
     /// @notice The amount of tokens staked by an account
     mapping(address => uint256) public balanceOf;
@@ -82,7 +87,7 @@ contract ERC20StakingPool is Ownable {
     }
 
     /// @notice The token being staked in the pool
-    function stakeToken() public pure returns (ERC20 stakeToken_) {
+    function stakeToken() public pure returns (ERC721 stakeToken_) {
         uint256 offset = _getImmutableVariablesOffset();
         assembly {
             stakeToken_ := shr(0x60, calldataload(add(offset, 0x14)))
@@ -116,14 +121,14 @@ contract ERC20StakingPool is Ownable {
     /// User actions
     /// -----------------------------------------------------------------------
 
-    /// @notice Stakes tokens in the pool to earn rewards
-    /// @param amount The amount of tokens to stake
-    function stake(uint256 amount) external {
+    /// @notice Stakes a list of ERC721 tokens in the pool to earn rewards
+    /// @param idList The list of ERC721 token IDs to stake
+    function stake(uint256[] calldata idList) external {
         /// -----------------------------------------------------------------------
         /// Validation
         /// -----------------------------------------------------------------------
 
-        if (amount == 0) {
+        if (idList.length == 0) {
             return;
         }
 
@@ -156,26 +161,39 @@ contract ERC20StakingPool is Ownable {
         userRewardPerTokenPaid[msg.sender] = rewardPerToken_;
 
         // stake
-        totalSupply = totalSupply_ + amount;
-        balanceOf[msg.sender] = accountBalance + amount;
+        totalSupply = totalSupply_ + idList.length;
+        balanceOf[msg.sender] = accountBalance + idList.length;
+        unchecked {
+            for (uint256 i = 0; i < idList.length; i++) {
+                ownerOf[idList[i]] = msg.sender;
+            }
+        }
 
         /// -----------------------------------------------------------------------
         /// Effects
         /// -----------------------------------------------------------------------
 
-        stakeToken().safeTransferFrom(msg.sender, address(this), amount);
+        unchecked {
+            for (uint256 i = 0; i < idList.length; i++) {
+                stakeToken().safeTransferFrom(
+                    msg.sender,
+                    address(this),
+                    idList[i]
+                );
+            }
+        }
 
-        emit Staked(msg.sender, amount);
+        emit Staked(msg.sender, idList);
     }
 
     /// @notice Withdraws staked tokens from the pool
-    /// @param amount The amount of tokens to withdraw
-    function withdraw(uint256 amount) external {
+    /// @param idList The list of ERC721 token IDs to stake
+    function withdraw(uint256[] calldata idList) external {
         /// -----------------------------------------------------------------------
         /// Validation
         /// -----------------------------------------------------------------------
 
-        if (amount == 0) {
+        if (idList.length == 0) {
             return;
         }
 
@@ -208,30 +226,48 @@ contract ERC20StakingPool is Ownable {
         userRewardPerTokenPaid[msg.sender] = rewardPerToken_;
 
         // withdraw stake
-        balanceOf[msg.sender] = accountBalance - amount;
+        balanceOf[msg.sender] = accountBalance - idList.length;
         // total supply has 1:1 relationship with staked amounts
         // so can't ever underflow
         unchecked {
-            totalSupply = totalSupply_ - amount;
+            totalSupply = totalSupply_ - idList.length;
+            for (uint256 i = 0; i < idList.length; i++) {
+                // verify ownership
+                address tokenOwner = ownerOf[idList[i]];
+                if (tokenOwner != msg.sender || tokenOwner == BURN_ADDRESS) {
+                    revert Error_NotTokenOwner();
+                }
+
+                // keep the storage slot dirty to save gas
+                // if someone else stakes the same token again
+                ownerOf[idList[i]] = BURN_ADDRESS;
+            }
         }
 
         /// -----------------------------------------------------------------------
         /// Effects
         /// -----------------------------------------------------------------------
 
-        stakeToken().safeTransfer(msg.sender, amount);
+        unchecked {
+            for (uint256 i = 0; i < idList.length; i++) {
+                stakeToken().safeTransferFrom(
+                    address(this),
+                    msg.sender,
+                    idList[i]
+                );
+            }
+        }
 
-        emit Withdrawn(msg.sender, amount);
+        emit Withdrawn(msg.sender, idList);
     }
 
-    /// @notice Withdraws all staked tokens and earned rewards
-    function exit() external {
+    /// @notice Withdraws specified staked tokens and earned rewards
+    function exit(uint256[] calldata idList) external {
         /// -----------------------------------------------------------------------
         /// Validation
         /// -----------------------------------------------------------------------
 
-        uint256 accountBalance = balanceOf[msg.sender];
-        if (accountBalance == 0) {
+        if (idList.length == 0) {
             return;
         }
 
@@ -239,6 +275,7 @@ contract ERC20StakingPool is Ownable {
         /// Storage loads
         /// -----------------------------------------------------------------------
 
+        uint256 accountBalance = balanceOf[msg.sender];
         uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
         uint256 totalSupply_ = totalSupply;
         uint256 rewardPerToken_ = _rewardPerToken(
@@ -268,11 +305,22 @@ contract ERC20StakingPool is Ownable {
         userRewardPerTokenPaid[msg.sender] = rewardPerToken_;
 
         // withdraw stake
-        balanceOf[msg.sender] = 0;
+        balanceOf[msg.sender] = accountBalance - idList.length;
         // total supply has 1:1 relationship with staked amounts
         // so can't ever underflow
         unchecked {
-            totalSupply = totalSupply_ - accountBalance;
+            totalSupply = totalSupply_ - idList.length;
+            for (uint256 i = 0; i < idList.length; i++) {
+                // verify ownership
+                address tokenOwner = ownerOf[idList[i]];
+                if (tokenOwner != msg.sender || tokenOwner == BURN_ADDRESS) {
+                    revert Error_NotTokenOwner();
+                }
+
+                // keep the storage slot dirty to save gas
+                // if someone else stakes the same token again
+                ownerOf[idList[i]] = BURN_ADDRESS;
+            }
         }
 
         /// -----------------------------------------------------------------------
@@ -280,8 +328,16 @@ contract ERC20StakingPool is Ownable {
         /// -----------------------------------------------------------------------
 
         // transfer stake
-        stakeToken().safeTransfer(msg.sender, accountBalance);
-        emit Withdrawn(msg.sender, accountBalance);
+        unchecked {
+            for (uint256 i = 0; i < idList.length; i++) {
+                stakeToken().safeTransferFrom(
+                    address(this),
+                    msg.sender,
+                    idList[i]
+                );
+            }
+        }
+        emit Withdrawn(msg.sender, idList);
 
         // transfer rewards
         if (reward > 0) {

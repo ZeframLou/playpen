@@ -5,6 +5,7 @@ import {BaseTest, console} from "./base/BaseTest.sol";
 
 import {TestERC20} from "./mocks/TestERC20.sol";
 import {ERC20StakingPool} from "../ERC20StakingPool.sol";
+import {ERC721StakingPool} from "../ERC721StakingPool.sol";
 import {StakingPoolFactory} from "../StakingPoolFactory.sol";
 
 contract ERC20StakingPoolTest is BaseTest {
@@ -18,8 +19,12 @@ contract ERC20StakingPoolTest is BaseTest {
     ERC20StakingPool stakingPool;
 
     function setUp() public {
-        ERC20StakingPool implementation = new ERC20StakingPool();
-        factory = new StakingPoolFactory(implementation);
+        ERC20StakingPool erc20StakingPoolImplementation = new ERC20StakingPool();
+        ERC721StakingPool erc721StakingPoolImplementation = new ERC721StakingPool();
+        factory = new StakingPoolFactory(
+            erc20StakingPoolImplementation,
+            erc721StakingPoolImplementation
+        );
 
         rewardToken = new TestERC20();
         stakeToken = new TestERC20();
