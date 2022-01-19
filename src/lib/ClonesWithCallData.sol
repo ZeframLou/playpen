@@ -81,7 +81,7 @@ library ClonesWithCallData {
                 mstore(add(ptr, 0x20), shl(0x60, implementation))
 
                 // 5a          | GAS                   | gas addr 0 cds 0 0 0    | [0, cds] = calldata
-                // f4          | DELEGATECALL          | success 0                | [0, cds] = calldata
+                // f4          | DELEGATECALL          | success 0               | [0, cds] = calldata
                 // 3d          | RETURNDATASIZE        | rds success 0           | [0, cds] = calldata
                 // 82          | DUP3                  | 0 rds success 0         | [0, cds] = calldata
                 // 80          | DUP1                  | 0 0 rds success 0       | [0, cds] = calldata
