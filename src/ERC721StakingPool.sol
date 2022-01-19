@@ -107,6 +107,8 @@ contract ERC721StakingPool is Ownable, ERC721TokenReceiver {
     /// Initialization
     /// -----------------------------------------------------------------------
 
+    /// @notice Initializes the owner, called by StakingPoolFactory
+    /// @param initialOwner The initial owner of the contract
     function initialize(address initialOwner) external {
         if (owner() != address(0)) {
             revert Error_AlreadyInitialized();
