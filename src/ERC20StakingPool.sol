@@ -4,6 +4,7 @@ pragma solidity ^0.8.4;
 
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
+import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 
 import {Ownable} from "./lib/Ownable.sol";
 
@@ -13,6 +14,15 @@ contract ERC20StakingPool is Ownable {
     /// -----------------------------------------------------------------------
 
     using SafeTransferLib for ERC20;
+    using FixedPointMathLib for uint256;
+
+    /// -----------------------------------------------------------------------
+    /// Errors
+    /// -----------------------------------------------------------------------
+
+    error Error_ZeroAmount();
+    error Error_NotRewardDistribution();
+    error Error_AmountTooLarge();
 
     /// -----------------------------------------------------------------------
     /// Events
@@ -74,7 +84,9 @@ contract ERC20StakingPool is Ownable {
         /// Validation
         /// -----------------------------------------------------------------------
 
-        require(amount > 0, "Rewards: cannot stake 0");
+        if (amount == 0) {
+            revert Error_ZeroAmount();
+        }
 
         /// -----------------------------------------------------------------------
         /// Storage loads
@@ -122,7 +134,9 @@ contract ERC20StakingPool is Ownable {
         /// Validation
         /// -----------------------------------------------------------------------
 
-        require(amount > 0, "Rewards: cannot withdraw 0");
+        if (amount == 0) {
+            revert Error_ZeroAmount();
+        }
 
         /// -----------------------------------------------------------------------
         /// Storage loads
@@ -175,7 +189,9 @@ contract ERC20StakingPool is Ownable {
         /// -----------------------------------------------------------------------
 
         uint256 accountBalance = balanceOf[msg.sender];
-        require(accountBalance > 0, "Rewards: cannot withdraw 0");
+        if (accountBalance == 0) {
+            revert Error_ZeroAmount();
+        }
 
         /// -----------------------------------------------------------------------
         /// Storage loads
@@ -314,15 +330,12 @@ contract ERC20StakingPool is Ownable {
         /// Validation
         /// -----------------------------------------------------------------------
 
-        require(
-            isRewardDistribution[msg.sender],
-            "Caller is not reward distribution"
-        );
-        require(reward > 0, "Rewards: reward == 0");
-        require(
-            reward < type(uint256).max / 1e18,
-            "Rewards: rewards too large, would lock"
-        );
+        if (reward == 0) {
+            revert Error_ZeroAmount();
+        }
+        if (!isRewardDistribution[msg.sender]) {
+            revert Error_NotRewardDistribution();
+        }
 
         /// -----------------------------------------------------------------------
         /// Storage loads
@@ -348,13 +361,22 @@ contract ERC20StakingPool is Ownable {
         lastUpdateTime = lastTimeRewardApplicable_;
 
         // record new reward
+        uint256 newRewardRate;
         if (block.timestamp >= _periodFinish) {
-            rewardRate = reward / _DURATION;
+            newRewardRate = reward / _DURATION;
         } else {
             uint256 remaining = _periodFinish - block.timestamp;
             uint256 leftover = remaining * rewardRate_;
-            rewardRate = (reward + leftover) / _DURATION;
+            newRewardRate = (reward + leftover) / _DURATION;
         }
+        // prevent overflow when computing rewardPerToken
+        if (
+            newRewardRate >=
+            (type(uint256).max / FixedPointMathLib.WAD) / _DURATION
+        ) {
+            revert Error_AmountTooLarge();
+        }
+        rewardRate = newRewardRate;
         lastUpdateTime = uint64(block.timestamp);
         periodFinish = uint64(block.timestamp + _DURATION);
 
@@ -379,10 +401,10 @@ contract ERC20StakingPool is Ownable {
         uint256 accountRewards
     ) internal view returns (uint256) {
         return
-            (accountBalance *
-                (rewardPerToken_ - userRewardPerTokenPaid[account])) /
-            1e18 +
-            accountRewards;
+            accountBalance.fmul(
+                rewardPerToken_ - userRewardPerTokenPaid[account],
+                FixedPointMathLib.WAD
+            ) + accountRewards;
     }
 
     function _rewardPerToken(
@@ -395,9 +417,10 @@ contract ERC20StakingPool is Ownable {
         }
         return
             rewardPerTokenStored +
-            (((lastTimeRewardApplicable_ - lastUpdateTime) *
-                rewardRate_ *
-                1e18) / totalSupply_);
+            ((lastTimeRewardApplicable_ - lastUpdateTime) * rewardRate_).fdiv(
+                totalSupply_,
+                FixedPointMathLib.WAD
+            );
     }
 
     function _getImmutableVariablesOffset()
