@@ -4,9 +4,9 @@ pragma solidity ^0.8.4;
 
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
-import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 
 import {Ownable} from "./lib/Ownable.sol";
+import {FullMath} from "./lib/FullMath.sol";
 
 /// @title ERC20StakingPool
 /// @author zefram.eth
@@ -18,13 +18,13 @@ contract ERC20StakingPool is Ownable {
     /// -----------------------------------------------------------------------
 
     using SafeTransferLib for ERC20;
-    using FixedPointMathLib for uint256;
 
     /// -----------------------------------------------------------------------
     /// Errors
     /// -----------------------------------------------------------------------
 
-    error Error_ZeroAmount();
+    error Error_ZeroOwner();
+    error Error_AlreadyInitialized();
     error Error_NotRewardDistributor();
     error Error_AmountTooLarge();
 
@@ -36,6 +36,12 @@ contract ERC20StakingPool is Ownable {
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
+
+    /// -----------------------------------------------------------------------
+    /// Constants
+    /// -----------------------------------------------------------------------
+
+    uint256 internal constant PRECISION = 1e30;
 
     /// -----------------------------------------------------------------------
     /// Storage variables
@@ -68,27 +74,42 @@ contract ERC20StakingPool is Ownable {
     /// -----------------------------------------------------------------------
 
     /// @notice The token being rewarded to stakers
-    function rewardToken() public pure returns (ERC20 _rewardToken) {
+    function rewardToken() public pure returns (ERC20 rewardToken_) {
         uint256 offset = _getImmutableVariablesOffset();
         assembly {
-            _rewardToken := shr(0x60, calldataload(offset))
+            rewardToken_ := shr(0x60, calldataload(offset))
         }
     }
 
     /// @notice The token being staked in the pool
-    function stakeToken() public pure returns (ERC20 _stakeToken) {
+    function stakeToken() public pure returns (ERC20 stakeToken_) {
         uint256 offset = _getImmutableVariablesOffset();
         assembly {
-            _stakeToken := shr(0x60, calldataload(add(offset, 0x14)))
+            stakeToken_ := shr(0x60, calldataload(add(offset, 0x14)))
         }
     }
 
     /// @notice The length of each reward period, in seconds
-    function DURATION() public pure returns (uint64 _DURATION) {
+    function DURATION() public pure returns (uint64 DURATION_) {
         uint256 offset = _getImmutableVariablesOffset();
         assembly {
-            _DURATION := shr(0xc0, calldataload(add(offset, 0x28)))
+            DURATION_ := shr(0xc0, calldataload(add(offset, 0x28)))
         }
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Initialization
+    /// -----------------------------------------------------------------------
+
+    function initialize(address initialOwner) external {
+        if (owner() != address(0)) {
+            revert Error_AlreadyInitialized();
+        }
+        if (initialOwner == address(0)) {
+            revert Error_ZeroOwner();
+        }
+
+        _transferOwnership(initialOwner);
     }
 
     /// -----------------------------------------------------------------------
@@ -103,7 +124,7 @@ contract ERC20StakingPool is Ownable {
         /// -----------------------------------------------------------------------
 
         if (amount == 0) {
-            revert Error_ZeroAmount();
+            return;
         }
 
         /// -----------------------------------------------------------------------
@@ -155,7 +176,7 @@ contract ERC20StakingPool is Ownable {
         /// -----------------------------------------------------------------------
 
         if (amount == 0) {
-            revert Error_ZeroAmount();
+            return;
         }
 
         /// -----------------------------------------------------------------------
@@ -211,7 +232,7 @@ contract ERC20StakingPool is Ownable {
 
         uint256 accountBalance = balanceOf[msg.sender];
         if (accountBalance == 0) {
-            revert Error_ZeroAmount();
+            return;
         }
 
         /// -----------------------------------------------------------------------
@@ -230,17 +251,6 @@ contract ERC20StakingPool is Ownable {
         /// State updates
         /// -----------------------------------------------------------------------
 
-        // accrue rewards
-        rewardPerTokenStored = rewardPerToken_;
-        lastUpdateTime = lastTimeRewardApplicable_;
-        userRewardPerTokenPaid[msg.sender] = rewardPerToken_;
-
-        // withdraw stake
-        balanceOf[msg.sender] = 0;
-        unchecked {
-            totalSupply = totalSupply_ - accountBalance;
-        }
-
         // give rewards
         uint256 reward = _earned(
             msg.sender,
@@ -250,6 +260,17 @@ contract ERC20StakingPool is Ownable {
         );
         if (reward > 0) {
             rewards[msg.sender] = 0;
+        }
+
+        // accrue rewards
+        rewardPerTokenStored = rewardPerToken_;
+        lastUpdateTime = lastTimeRewardApplicable_;
+        userRewardPerTokenPaid[msg.sender] = rewardPerToken_;
+
+        // withdraw stake
+        balanceOf[msg.sender] = 0;
+        unchecked {
+            totalSupply = totalSupply_ - accountBalance;
         }
 
         /// -----------------------------------------------------------------------
@@ -286,17 +307,19 @@ contract ERC20StakingPool is Ownable {
         /// State updates
         /// -----------------------------------------------------------------------
 
-        // accrue rewards
-        rewardPerTokenStored = rewardPerToken_;
-        lastUpdateTime = lastTimeRewardApplicable_;
-        userRewardPerTokenPaid[msg.sender] = rewardPerToken_;
-
         uint256 reward = _earned(
             msg.sender,
             accountBalance,
             rewardPerToken_,
             rewards[msg.sender]
         );
+
+        // accrue rewards
+        rewardPerTokenStored = rewardPerToken_;
+        lastUpdateTime = lastTimeRewardApplicable_;
+        userRewardPerTokenPaid[msg.sender] = rewardPerToken_;
+
+        // withdraw rewards
         if (reward > 0) {
             rewards[msg.sender] = 0;
 
@@ -365,7 +388,7 @@ contract ERC20StakingPool is Ownable {
         /// -----------------------------------------------------------------------
 
         if (reward == 0) {
-            revert Error_ZeroAmount();
+            return;
         }
         if (!isRewardDistributor[msg.sender]) {
             revert Error_NotRewardDistributor();
@@ -376,11 +399,12 @@ contract ERC20StakingPool is Ownable {
         /// -----------------------------------------------------------------------
 
         uint256 rewardRate_ = rewardRate;
-        uint64 _periodFinish = periodFinish;
-        uint64 lastTimeRewardApplicable_ = block.timestamp < _periodFinish
+        uint64 periodFinish_ = periodFinish;
+        uint64 lastTimeRewardApplicable_ = block.timestamp < periodFinish_
             ? uint64(block.timestamp)
-            : _periodFinish;
-        uint64 _DURATION = DURATION();
+            : periodFinish_;
+        uint64 DURATION_ = DURATION();
+        uint256 totalSupply_ = totalSupply;
 
         /// -----------------------------------------------------------------------
         /// State updates
@@ -388,7 +412,7 @@ contract ERC20StakingPool is Ownable {
 
         // accrue rewards
         rewardPerTokenStored = _rewardPerToken(
-            totalSupply,
+            totalSupply_,
             lastTimeRewardApplicable_,
             rewardRate_
         );
@@ -396,23 +420,20 @@ contract ERC20StakingPool is Ownable {
 
         // record new reward
         uint256 newRewardRate;
-        if (block.timestamp >= _periodFinish) {
-            newRewardRate = reward / _DURATION;
+        if (block.timestamp >= periodFinish_) {
+            newRewardRate = reward / DURATION_;
         } else {
-            uint256 remaining = _periodFinish - block.timestamp;
+            uint256 remaining = periodFinish_ - block.timestamp;
             uint256 leftover = remaining * rewardRate_;
-            newRewardRate = (reward + leftover) / _DURATION;
+            newRewardRate = (reward + leftover) / DURATION_;
         }
         // prevent overflow when computing rewardPerToken
-        if (
-            newRewardRate >=
-            (type(uint256).max / FixedPointMathLib.WAD) / _DURATION
-        ) {
+        if (newRewardRate >= ((type(uint256).max / PRECISION) / DURATION_)) {
             revert Error_AmountTooLarge();
         }
         rewardRate = newRewardRate;
         lastUpdateTime = uint64(block.timestamp);
-        periodFinish = uint64(block.timestamp + _DURATION);
+        periodFinish = uint64(block.timestamp + DURATION_);
 
         emit RewardAdded(reward);
     }
@@ -439,9 +460,10 @@ contract ERC20StakingPool is Ownable {
         uint256 accountRewards
     ) internal view returns (uint256) {
         return
-            accountBalance.fmul(
+            FullMath.mulDiv(
+                accountBalance,
                 rewardPerToken_ - userRewardPerTokenPaid[account],
-                FixedPointMathLib.WAD
+                PRECISION
             ) + accountRewards;
     }
 
@@ -455,9 +477,10 @@ contract ERC20StakingPool is Ownable {
         }
         return
             rewardPerTokenStored +
-            ((lastTimeRewardApplicable_ - lastUpdateTime) * rewardRate_).fdiv(
-                totalSupply_,
-                FixedPointMathLib.WAD
+            FullMath.mulDiv(
+                (lastTimeRewardApplicable_ - lastUpdateTime) * PRECISION,
+                rewardRate_,
+                totalSupply_
             );
     }
 
