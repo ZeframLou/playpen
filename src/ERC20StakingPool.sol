@@ -8,6 +8,10 @@ import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 
 import {Ownable} from "./lib/Ownable.sol";
 
+/// @title ERC20StakingPool
+/// @author zefram.eth
+/// @notice A modern, gas optimized staking pool contract for rewarding ERC20 stakers
+/// with ERC20 tokens periodically and continuously
 contract ERC20StakingPool is Ownable {
     /// -----------------------------------------------------------------------
     /// Library usage
@@ -21,7 +25,7 @@ contract ERC20StakingPool is Ownable {
     /// -----------------------------------------------------------------------
 
     error Error_ZeroAmount();
-    error Error_NotRewardDistribution();
+    error Error_NotRewardDistributor();
     error Error_AmountTooLarge();
 
     /// -----------------------------------------------------------------------
@@ -37,23 +41,33 @@ contract ERC20StakingPool is Ownable {
     /// Storage variables
     /// -----------------------------------------------------------------------
 
+    /// @notice The last Unix timestamp (in seconds) when rewardPerTokenStored was updated
     uint64 public lastUpdateTime;
+    /// @notice The Unix timestamp (in seconds) at which the current reward period ends
     uint64 public periodFinish;
 
+    /// @notice The per-second rate at which rewardPerToken increases
     uint256 public rewardRate;
+    /// @notice The last stored rewardPerToken value
     uint256 public rewardPerTokenStored;
+    /// @notice The total tokens staked in the pool
     uint256 public totalSupply;
 
-    mapping(address => bool) public isRewardDistribution;
+    /// @notice Tracks if an address can call notifyReward()
+    mapping(address => bool) public isRewardDistributor;
 
+    /// @notice The amount of tokens staked by an account
     mapping(address => uint256) public balanceOf;
+    /// @notice The rewardPerToken value when an account last staked/withdrew/withdrew rewards
     mapping(address => uint256) public userRewardPerTokenPaid;
+    /// @notice The earned() value when an account last staked/withdrew/withdrew rewards
     mapping(address => uint256) public rewards;
 
     /// -----------------------------------------------------------------------
     /// Immutable parameters
     /// -----------------------------------------------------------------------
 
+    /// @notice The token being rewarded to stakers
     function rewardToken() public pure returns (ERC20 _rewardToken) {
         uint256 offset = _getImmutableVariablesOffset();
         assembly {
@@ -61,6 +75,7 @@ contract ERC20StakingPool is Ownable {
         }
     }
 
+    /// @notice The token being staked in the pool
     function stakeToken() public pure returns (ERC20 _stakeToken) {
         uint256 offset = _getImmutableVariablesOffset();
         assembly {
@@ -68,6 +83,7 @@ contract ERC20StakingPool is Ownable {
         }
     }
 
+    /// @notice The length of each reward period, in seconds
     function DURATION() public pure returns (uint64 _DURATION) {
         uint256 offset = _getImmutableVariablesOffset();
         assembly {
@@ -79,6 +95,8 @@ contract ERC20StakingPool is Ownable {
     /// User actions
     /// -----------------------------------------------------------------------
 
+    /// @notice Stakes tokens in the pool to earn rewards
+    /// @param amount The amount of tokens to stake
     function stake(uint256 amount) external {
         /// -----------------------------------------------------------------------
         /// Validation
@@ -129,6 +147,8 @@ contract ERC20StakingPool is Ownable {
         emit Staked(msg.sender, amount);
     }
 
+    /// @notice Withdraws staked tokens from the pool
+    /// @param amount The amount of tokens to withdraw
     function withdraw(uint256 amount) external {
         /// -----------------------------------------------------------------------
         /// Validation
@@ -183,6 +203,7 @@ contract ERC20StakingPool is Ownable {
         emit Withdrawn(msg.sender, amount);
     }
 
+    /// @notice Withdraws all staked tokens and earned rewards
     function exit() external {
         /// -----------------------------------------------------------------------
         /// Validation
@@ -246,6 +267,7 @@ contract ERC20StakingPool is Ownable {
         }
     }
 
+    /// @notice Withdraws all earned rewards
     function getReward() external {
         /// -----------------------------------------------------------------------
         /// Storage loads
@@ -291,6 +313,7 @@ contract ERC20StakingPool is Ownable {
     /// Getters
     /// -----------------------------------------------------------------------
 
+    /// @notice The latest time at which stakers are earning rewards.
     function lastTimeRewardApplicable() public view returns (uint64) {
         return
             block.timestamp < periodFinish
@@ -298,6 +321,7 @@ contract ERC20StakingPool is Ownable {
                 : periodFinish;
     }
 
+    /// @notice The amount of reward tokens each staked token has earned so far
     function rewardPerToken() external view returns (uint256) {
         return
             _rewardPerToken(
@@ -307,6 +331,8 @@ contract ERC20StakingPool is Ownable {
             );
     }
 
+    /// @notice The amount of reward tokens an account has accrued so far. Does not
+    /// include already withdrawn rewards.
     function earned(address account) external view returns (uint256) {
         return
             _earned(
@@ -325,6 +351,14 @@ contract ERC20StakingPool is Ownable {
     /// Owner actions
     /// -----------------------------------------------------------------------
 
+    /// @notice Lets a reward distributor start a new reward period. The reward tokens must have already
+    /// been transferred to this contract before calling this function. If it is called
+    /// when a reward period is still active, a new reward period will begin from the time
+    /// of calling this function, using the leftover rewards from the old reward period plus
+    /// the newly sent rewards as the reward.
+    /// @dev If the reward amount will cause an overflow when computing rewardPerToken, then
+    /// this function will revert.
+    /// @param reward The amount of reward tokens to use in the new reward period.
     function notifyRewardAmount(uint256 reward) external {
         /// -----------------------------------------------------------------------
         /// Validation
@@ -333,8 +367,8 @@ contract ERC20StakingPool is Ownable {
         if (reward == 0) {
             revert Error_ZeroAmount();
         }
-        if (!isRewardDistribution[msg.sender]) {
-            revert Error_NotRewardDistribution();
+        if (!isRewardDistributor[msg.sender]) {
+            revert Error_NotRewardDistributor();
         }
 
         /// -----------------------------------------------------------------------
@@ -383,11 +417,15 @@ contract ERC20StakingPool is Ownable {
         emit RewardAdded(reward);
     }
 
-    function setRewardDistribution(
-        address _rewardDistribution,
-        bool _isRewardDistribution
+    /// @notice Lets the owner add/remove accounts from the list of reward distributors.
+    /// Reward distributors can call notifyRewardAmount()
+    /// @param rewardDistributor The account to add/remove
+    /// @param isRewardDistributor_ True to add the account, false to remove the account
+    function setRewardDistributor(
+        address rewardDistributor,
+        bool isRewardDistributor_
     ) external onlyOwner {
-        isRewardDistribution[_rewardDistribution] = _isRewardDistribution;
+        isRewardDistributor[rewardDistributor] = isRewardDistributor_;
     }
 
     /// -----------------------------------------------------------------------
