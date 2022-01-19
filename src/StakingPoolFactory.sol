@@ -17,6 +17,12 @@ contract StakingPoolFactory {
     using ClonesWithCallData for address;
 
     /// -----------------------------------------------------------------------
+    /// Events
+    /// -----------------------------------------------------------------------
+
+    event CreateERC20StakingPool(ERC20StakingPool stakingPool);
+
+    /// -----------------------------------------------------------------------
     /// Immutable parameters
     /// -----------------------------------------------------------------------
 
@@ -51,5 +57,7 @@ contract StakingPoolFactory {
             address(implementation).cloneWithCallDataProvision(ptr)
         );
         stakingPool.initialize(msg.sender);
+
+        emit CreateERC20StakingPool(stakingPool);
     }
 }
