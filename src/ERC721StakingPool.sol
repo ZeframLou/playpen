@@ -3,7 +3,7 @@
 pragma solidity ^0.8.4;
 
 import {ERC20} from "solmate/tokens/ERC20.sol";
-import {ERC721} from "solmate/tokens/ERC721.sol";
+import {ERC721, ERC721TokenReceiver} from "solmate/tokens/ERC721.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
 import {Ownable} from "./lib/Ownable.sol";
@@ -13,7 +13,7 @@ import {FullMath} from "./lib/FullMath.sol";
 /// @author zefram.eth
 /// @notice A modern, gas optimized staking pool contract for rewarding ERC721 stakers
 /// with ERC20 tokens periodically and continuously
-contract ERC721StakingPool is Ownable {
+contract ERC721StakingPool is Ownable, ERC721TokenReceiver {
     /// -----------------------------------------------------------------------
     /// Library usage
     /// -----------------------------------------------------------------------
@@ -29,6 +29,7 @@ contract ERC721StakingPool is Ownable {
     error Error_NotRewardDistributor();
     error Error_AmountTooLarge();
     error Error_NotTokenOwner();
+    error Error_NotStakeToken();
 
     /// -----------------------------------------------------------------------
     /// Events
@@ -426,6 +427,19 @@ contract ERC721StakingPool is Ownable {
                 ),
                 rewards[account]
             );
+    }
+
+    /// @dev ERC721 compliance
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) external view override returns (bytes4) {
+        if (msg.sender != address(stakeToken())) {
+            revert Error_NotStakeToken();
+        }
+        return this.onERC721Received.selector;
     }
 
     /// -----------------------------------------------------------------------
