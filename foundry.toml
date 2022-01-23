@@ -1,0 +1,7 @@
+[default]
+ffi = false
+fuzz_runs = 256
+optimizer = true
+optimizer_runs = 1000000
+remappings = ["ds-test/=lib/ds-test/src/", "solmate/=lib/solmate/src/"]
+verbosity = 1

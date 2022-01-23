@@ -1,2 +1,0 @@
-ds-test/=lib/ds-test/src/
-solmate/=lib/solmate/src/
