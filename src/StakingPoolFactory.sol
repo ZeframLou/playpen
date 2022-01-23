@@ -56,16 +56,10 @@ contract StakingPoolFactory {
         ERC20 stakeToken,
         uint64 DURATION
     ) external returns (ERC20StakingPool stakingPool) {
-        bytes memory ptr;
-        ptr = new bytes(48);
-        assembly {
-            mstore(add(ptr, 0x20), shl(0x60, rewardToken))
-            mstore(add(ptr, 0x34), shl(0x60, stakeToken))
-            mstore(add(ptr, 0x48), shl(0xc0, DURATION))
-        }
+        bytes memory data = abi.encodePacked(rewardToken, stakeToken, DURATION);
 
         stakingPool = ERC20StakingPool(
-            address(erc20StakingPoolImplementation).clone(ptr)
+            address(erc20StakingPoolImplementation).clone(data)
         );
         stakingPool.initialize(msg.sender);
 
@@ -84,16 +78,10 @@ contract StakingPoolFactory {
         ERC721 stakeToken,
         uint64 DURATION
     ) external returns (ERC721StakingPool stakingPool) {
-        bytes memory ptr;
-        ptr = new bytes(48);
-        assembly {
-            mstore(add(ptr, 0x20), shl(0x60, rewardToken))
-            mstore(add(ptr, 0x34), shl(0x60, stakeToken))
-            mstore(add(ptr, 0x48), shl(0xc0, DURATION))
-        }
+        bytes memory data = abi.encodePacked(rewardToken, stakeToken, DURATION);
 
         stakingPool = ERC721StakingPool(
-            address(erc721StakingPoolImplementation).clone(ptr)
+            address(erc721StakingPoolImplementation).clone(data)
         );
         stakingPool.initialize(msg.sender);
 
