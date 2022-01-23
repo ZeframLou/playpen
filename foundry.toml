@@ -3,5 +3,5 @@ ffi = false
 fuzz_runs = 256
 optimizer = true
 optimizer_runs = 1000000
-remappings = ["ds-test/=lib/ds-test/src/", "solmate/=lib/solmate/src/"]
+remappings = ["ds-test/=lib/ds-test/src/", "solmate/=lib/solmate/src/", "@clones/=lib/clones-with-immutable-args/src/"]
 verbosity = 1

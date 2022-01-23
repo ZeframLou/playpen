@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.11;
 
+import {ClonesWithImmutableArgs} from "@clones/ClonesWithImmutableArgs.sol";
+
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {ERC721} from "solmate/tokens/ERC721.sol";
 
 import {ERC20StakingPool} from "./ERC20StakingPool.sol";
 import {ERC721StakingPool} from "./ERC721StakingPool.sol";
-import {ClonesWithCallData} from "./lib/ClonesWithCallData.sol";
 
 /// @title StakingPoolFactory
 /// @author zefram.eth
@@ -16,7 +17,7 @@ contract StakingPoolFactory {
     /// Library usage
     /// -----------------------------------------------------------------------
 
-    using ClonesWithCallData for address;
+    using ClonesWithImmutableArgs for address;
 
     /// -----------------------------------------------------------------------
     /// Events
@@ -64,9 +65,7 @@ contract StakingPoolFactory {
         }
 
         stakingPool = ERC20StakingPool(
-            address(erc20StakingPoolImplementation).cloneWithCallDataProvision(
-                ptr
-            )
+            address(erc20StakingPoolImplementation).clone(ptr)
         );
         stakingPool.initialize(msg.sender);
 
@@ -94,9 +93,7 @@ contract StakingPoolFactory {
         }
 
         stakingPool = ERC721StakingPool(
-            address(erc721StakingPoolImplementation).cloneWithCallDataProvision(
-                ptr
-            )
+            address(erc721StakingPoolImplementation).clone(ptr)
         );
         stakingPool.initialize(msg.sender);
 

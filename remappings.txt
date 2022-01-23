@@ -1,0 +1,4 @@
+ds-test/=lib/ds-test/src/
+@clones/=lib/clones-with-immutable-args/src/
+solmate/=lib/solmate/src/
+weird-erc20/=lib/solmate/lib/weird-erc20/src/

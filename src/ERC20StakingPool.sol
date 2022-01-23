@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.4;
 
+import {Clone} from "@clones/Clone.sol";
+
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
@@ -12,7 +14,7 @@ import {FullMath} from "./lib/FullMath.sol";
 /// @author zefram.eth
 /// @notice A modern, gas optimized staking pool contract for rewarding ERC20 stakers
 /// with ERC20 tokens periodically and continuously
-contract ERC20StakingPool is Ownable {
+contract ERC20StakingPool is Ownable, Clone {
     /// -----------------------------------------------------------------------
     /// Library usage
     /// -----------------------------------------------------------------------
@@ -75,26 +77,17 @@ contract ERC20StakingPool is Ownable {
 
     /// @notice The token being rewarded to stakers
     function rewardToken() public pure returns (ERC20 rewardToken_) {
-        uint256 offset = _getImmutableVariablesOffset();
-        assembly {
-            rewardToken_ := shr(0x60, calldataload(offset))
-        }
+        return ERC20(_getArgAddress(0));
     }
 
     /// @notice The token being staked in the pool
     function stakeToken() public pure returns (ERC20 stakeToken_) {
-        uint256 offset = _getImmutableVariablesOffset();
-        assembly {
-            stakeToken_ := shr(0x60, calldataload(add(offset, 0x14)))
-        }
+        return ERC20(_getArgAddress(0x14));
     }
 
     /// @notice The length of each reward period, in seconds
     function DURATION() public pure returns (uint64 DURATION_) {
-        uint256 offset = _getImmutableVariablesOffset();
-        assembly {
-            DURATION_ := shr(0xc0, calldataload(add(offset, 0x28)))
-        }
+        return _getArgUint64(0x28);
     }
 
     /// -----------------------------------------------------------------------
