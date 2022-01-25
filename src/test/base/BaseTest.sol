@@ -8,4 +8,23 @@ import {console} from "../utils/console.sol";
 
 contract BaseTest is DSTest {
     VM internal constant vm = VM(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
+
+    function assertEqEpsilonBelow(
+        uint256 a,
+        uint256 b,
+        uint256 epsilonInv
+    ) internal {
+        assertLe(a, b);
+        assertGe(a, b - b / epsilonInv);
+    }
+
+    function assertEqDecimalEpsilonBelow(
+        uint256 a,
+        uint256 b,
+        uint256 decimals,
+        uint256 epsilonInv
+    ) internal {
+        assertLeDecimal(a, b, decimals);
+        assertGeDecimal(a, b - b / epsilonInv, decimals);
+    }
 }

@@ -3,6 +3,7 @@ pragma solidity ^0.8.4;
 
 import {BaseTest, console} from "./base/BaseTest.sol";
 
+import {xERC20} from "../xERC20.sol";
 import {TestERC20} from "./mocks/TestERC20.sol";
 import {ERC20StakingPool} from "../ERC20StakingPool.sol";
 import {ERC721StakingPool} from "../ERC721StakingPool.sol";
@@ -19,9 +20,11 @@ contract ERC20StakingPoolTest is BaseTest {
     ERC20StakingPool stakingPool;
 
     function setUp() public {
+        xERC20 xERC20Implementation = new xERC20();
         ERC20StakingPool erc20StakingPoolImplementation = new ERC20StakingPool();
         ERC721StakingPool erc721StakingPoolImplementation = new ERC721StakingPool();
         factory = new StakingPoolFactory(
+            xERC20Implementation,
             erc20StakingPoolImplementation,
             erc721StakingPoolImplementation
         );
@@ -200,12 +203,7 @@ contract ERC20StakingPoolTest is BaseTest {
                     amount1) /
                 (amount0 + amount1);
         }
-        assertLeDecimal(rewardAmount, expectedRewardAmount, 18);
-        assertGeDecimal(
-            rewardAmount,
-            expectedRewardAmount - expectedRewardAmount / 1e8,
-            18
-        );
+        assertEqDecimalEpsilonBelow(rewardAmount, expectedRewardAmount, 18, 1e8);
     }
 
     function testCorrectness_exit(
@@ -273,12 +271,7 @@ contract ERC20StakingPoolTest is BaseTest {
                     amount1) /
                 (amount0 + amount1);
         }
-        assertLeDecimal(rewardAmount, expectedRewardAmount, 18);
-        assertGeDecimal(
-            rewardAmount,
-            expectedRewardAmount - expectedRewardAmount / 1e8,
-            18
-        );
+        assertEqDecimalEpsilonBelow(rewardAmount, expectedRewardAmount, 18, 1e8);
     }
 
     function testCorrectness_notifyRewardAmount(
@@ -335,12 +328,7 @@ contract ERC20StakingPoolTest is BaseTest {
                     stakeTimeAsDurationPercentage) /
                 100;
         }
-        assertLeDecimal(rewardAmount, expectedRewardAmount, 18);
-        assertGeDecimal(
-            rewardAmount,
-            expectedRewardAmount - expectedRewardAmount / 1e11,
-            18
-        );
+        assertEqDecimalEpsilonBelow(rewardAmount, expectedRewardAmount, 18, 1e11);
     }
 
     function testFail_cannotReinitialize() public {
