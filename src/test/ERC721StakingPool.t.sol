@@ -5,6 +5,7 @@ import {BaseTest, console} from "./base/BaseTest.sol";
 
 import {ERC721TokenReceiver} from "solmate/tokens/ERC721.sol";
 
+import {xERC20} from "../xERC20.sol";
 import {TestERC20} from "./mocks/TestERC20.sol";
 import {TestERC721} from "./mocks/TestERC721.sol";
 import {ERC20StakingPool} from "../ERC20StakingPool.sol";
@@ -24,9 +25,11 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
     ERC721StakingPool stakingPool;
 
     function setUp() public {
+        xERC20 xERC20Implementation = new xERC20();
         ERC20StakingPool erc20StakingPoolImplementation = new ERC20StakingPool();
         ERC721StakingPool erc721StakingPoolImplementation = new ERC721StakingPool();
         factory = new StakingPoolFactory(
+            xERC20Implementation,
             erc20StakingPoolImplementation,
             erc721StakingPoolImplementation
         );
@@ -220,11 +223,11 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
                     uint256(amount1)) /
                 (uint256(amount0) + uint256(amount1));
         }
-        assertLeDecimal(rewardAmount, expectedRewardAmount, 18);
-        assertGeDecimal(
+        assertEqDecimalEpsilonBelow(
             rewardAmount,
-            expectedRewardAmount - expectedRewardAmount / 1e8,
-            18
+            expectedRewardAmount,
+            18,
+            1e8
         );
     }
 
@@ -289,11 +292,11 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
                     uint256(amount1)) /
                 (uint256(amount0) + uint256(amount1));
         }
-        assertLeDecimal(rewardAmount, expectedRewardAmount, 18);
-        assertGeDecimal(
+        assertEqDecimalEpsilonBelow(
             rewardAmount,
-            expectedRewardAmount - expectedRewardAmount / 1e8,
-            18
+            expectedRewardAmount,
+            18,
+            1e8
         );
     }
 
@@ -351,11 +354,11 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
                     stakeTimeAsDurationPercentage) /
                 100;
         }
-        assertLeDecimal(rewardAmount, expectedRewardAmount, 18);
-        assertGeDecimal(
+        assertEqDecimalEpsilonBelow(
             rewardAmount,
-            expectedRewardAmount - expectedRewardAmount / 1e11,
-            18
+            expectedRewardAmount,
+            18,
+            1e11
         );
     }
 
