@@ -18,6 +18,15 @@ contract BaseTest is DSTest {
         assertGe(a, b - b / epsilonInv);
     }
 
+    function assertEqEpsilonAround(
+        uint256 a,
+        uint256 b,
+        uint256 epsilonInv
+    ) internal {
+        assertLe(a, b + b / epsilonInv);
+        assertGe(a, b - b / epsilonInv);
+    }
+
     function assertEqDecimalEpsilonBelow(
         uint256 a,
         uint256 b,
@@ -25,6 +34,16 @@ contract BaseTest is DSTest {
         uint256 epsilonInv
     ) internal {
         assertLeDecimal(a, b, decimals);
+        assertGeDecimal(a, b - b / epsilonInv, decimals);
+    }
+
+    function assertEqDecimalEpsilonAround(
+        uint256 a,
+        uint256 b,
+        uint256 decimals,
+        uint256 epsilonInv
+    ) internal {
+        assertLeDecimal(a, b + b / epsilonInv, decimals);
         assertGeDecimal(a, b - b / epsilonInv, decimals);
     }
 }

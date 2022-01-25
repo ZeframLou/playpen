@@ -12,7 +12,6 @@ import {StakingPoolFactory} from "../StakingPoolFactory.sol";
 
 contract xERC20Test is BaseTest {
     uint64 constant DURATION = 7 days;
-    uint128 constant REWARD_AMOUNT = 10 ether;
     address constant tester = address(0x69);
     uint256 constant PRECISION = 1e18;
 
@@ -48,7 +47,7 @@ contract xERC20Test is BaseTest {
         stakingPool.stake(1 ether);
 
         // do initial reward distribution
-        stakingPool.distributeReward(REWARD_AMOUNT);
+        stakingPool.distributeReward(10 ether);
     }
 
     /// -------------------------------------------------------------------
@@ -70,6 +69,15 @@ contract xERC20Test is BaseTest {
     /// -------------------------------------------------------------------
 
     function testCorrectness_stake(uint256 amount, uint56 warpTime) public {
+        // deploy fresh pool
+        xERC20 stakingPool_ = factory.createXERC20(
+            bytes32("Staked SHT"),
+            bytes32("xSHT"),
+            18,
+            stakeToken,
+            DURATION
+        );
+
         vm.startPrank(tester);
 
         // warp to future
@@ -80,16 +88,16 @@ contract xERC20Test is BaseTest {
 
         // stake
         uint256 beforeStakingPoolStakeTokenBalance = stakeToken.balanceOf(
-            address(stakingPool)
+            address(stakingPool_)
         );
-        stakeToken.approve(address(stakingPool), amount);
-        uint256 xERC20Amount = stakingPool.stake(amount);
+        stakeToken.approve(address(stakingPool_), amount);
+        uint256 xERC20Amount = stakingPool_.stake(amount);
 
         // check balances
         // took stake tokens from tester to staking pool
         assertEqDecimal(stakeToken.balanceOf(tester), 0, 18);
         assertEqDecimal(
-            stakeToken.balanceOf(address(stakingPool)) -
+            stakeToken.balanceOf(address(stakingPool_)) -
                 beforeStakingPoolStakeTokenBalance,
             amount,
             18
@@ -100,11 +108,11 @@ contract xERC20Test is BaseTest {
             FullMath.mulDiv(
                 amount,
                 PRECISION,
-                stakingPool.getPricePerFullShare()
+                stakingPool_.getPricePerFullShare()
             ),
             18
         );
-        assertEqDecimal(stakingPool.balanceOf(tester), xERC20Amount, 18);
+        assertEqDecimal(stakingPool_.balanceOf(tester), xERC20Amount, 18);
     }
 
     function testCorrectness_withdraw(
@@ -112,10 +120,19 @@ contract xERC20Test is BaseTest {
         uint56 warpTime,
         uint56 stakeTime
     ) public {
+        // deploy fresh pool
+        xERC20 stakingPool_ = factory.createXERC20(
+            bytes32("Staked SHT"),
+            bytes32("xSHT"),
+            18,
+            stakeToken,
+            DURATION
+        );
+
         vm.startPrank(tester);
 
         // warp to future
-        vm.warp(warpTime + DURATION);
+        vm.warp(warpTime);
 
         // mint stake tokens
         stakeToken.mint(tester, amount);
@@ -125,16 +142,16 @@ contract xERC20Test is BaseTest {
             tester
         );
         uint256 beforeStakingPoolStakeTokenBalance = stakeToken.balanceOf(
-            address(stakingPool)
+            address(stakingPool_)
         );
-        stakeToken.approve(address(stakingPool), amount);
-        uint256 xERC20Amount = stakingPool.stake(amount);
+        stakeToken.approve(address(stakingPool_), amount);
+        uint256 xERC20Amount = stakingPool_.stake(amount);
 
         // warp to simulate staking
-        vm.warp(uint256(warpTime) + DURATION + uint256(stakeTime));
+        vm.warp(uint256(warpTime) + uint256(stakeTime));
 
         // withdraw
-        stakingPool.withdraw(xERC20Amount);
+        stakingPool_.withdraw(xERC20Amount);
 
         // check balance
         // staking and unstaking didn't change tester stake token balance in aggregate
@@ -146,13 +163,13 @@ contract xERC20Test is BaseTest {
         );
         // staking and unstaking didn't change the staking pool's stake token balance in aggregate
         assertLeDecimal(
-            stakeToken.balanceOf(address(stakingPool)) -
+            stakeToken.balanceOf(address(stakingPool_)) -
                 beforeStakingPoolStakeTokenBalance,
             beforeStakingPoolStakeTokenBalance / 1e18,
             18
         );
         // burnt xERC20 tokens of tester
-        assertEqDecimal(stakingPool.balanceOf(tester), 0, 18);
+        assertEqDecimal(stakingPool_.balanceOf(tester), 0, 18);
     }
 
     function testCorrectness_distributeReward(
@@ -160,26 +177,38 @@ contract xERC20Test is BaseTest {
         uint56 warpTime,
         uint8 stakeTimeAsDurationPercentage
     ) public {
+        // deploy fresh pool
+        xERC20 stakingPool_ = factory.createXERC20(
+            bytes32("Staked SHT"),
+            bytes32("xSHT"),
+            18,
+            stakeToken,
+            DURATION
+        );
+        stakingPool_.setRewardDistributor(address(this), true);
+        stakeToken.approve(address(stakingPool_), type(uint256).max);
+        stakingPool_.stake(1 ether);
+
         uint256 amount = amount_;
 
         // warp to some time in the future
-        vm.warp(warpTime + DURATION);
+        vm.warp(warpTime);
 
         // mint stake token
         stakeToken.mint(address(this), amount);
 
         // notify new rewards
         uint256 beforeTotalPoolValue = FullMath.mulDiv(
-            stakingPool.getPricePerFullShare(),
-            stakingPool.totalSupply(),
+            stakingPool_.getPricePerFullShare(),
+            stakingPool_.totalSupply(),
             PRECISION
         );
-        stakingPool.distributeReward(uint128(amount));
+        stakingPool_.distributeReward(uint128(amount));
 
         // warp to simulate staking
         uint256 stakeTime = (DURATION *
             uint256(stakeTimeAsDurationPercentage)) / 100;
-        vm.warp(warpTime + DURATION + stakeTime);
+        vm.warp(warpTime + stakeTime);
 
         // check assertions
         uint256 expectedRewardAmount;
@@ -193,11 +222,11 @@ contract xERC20Test is BaseTest {
                 100;
         }
         uint256 rewardAmount = FullMath.mulDiv(
-            stakingPool.getPricePerFullShare(),
-            stakingPool.totalSupply(),
+            stakingPool_.getPricePerFullShare(),
+            stakingPool_.totalSupply(),
             PRECISION
         ) - beforeTotalPoolValue;
-        assertEqDecimalEpsilonBelow(
+        assertEqDecimalEpsilonAround(
             rewardAmount,
             expectedRewardAmount,
             18,
