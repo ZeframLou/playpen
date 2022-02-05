@@ -226,9 +226,6 @@ contract ERC20StakingPool is Ownable, Clone {
         /// -----------------------------------------------------------------------
 
         uint256 accountBalance = balanceOf[msg.sender];
-        if (accountBalance == 0) {
-            return;
-        }
 
         /// -----------------------------------------------------------------------
         /// Storage loads
