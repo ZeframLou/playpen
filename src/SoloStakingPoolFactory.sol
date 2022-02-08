@@ -9,10 +9,10 @@ import {ERC721} from "solmate/tokens/ERC721.sol";
 import {ERC20StakingPool} from "./ERC20StakingPool.sol";
 import {ERC721StakingPool} from "./ERC721StakingPool.sol";
 
-/// @title StakingPoolFactory
-/// @author zefram.eth
+/// @title SoloStakingPoolFactory
+/// @author @daweth
 /// @notice Factory for deploying ERC20StakingPool and ERC721StakingPool contracts cheaply
-contract StakingPoolFactory {
+contract SoloStakingPoolFactory {
     /// -----------------------------------------------------------------------
     /// Library usage
     /// -----------------------------------------------------------------------
