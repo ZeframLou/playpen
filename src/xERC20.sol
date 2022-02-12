@@ -7,6 +7,8 @@ import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {Ownable} from "./lib/Ownable.sol";
 import {FullMath} from "./lib/FullMath.sol";
 import {ERC20 as CloneERC20} from "./lib/ERC20.sol";
+import {Multicall} from "./lib/Multicall.sol";
+import {SelfPermit} from "./lib/SelfPermit.sol";
 
 /// @title xERC20
 /// @author zefram.eth
@@ -16,7 +18,7 @@ import {ERC20 as CloneERC20} from "./lib/ERC20.sol";
 /// @dev xERC20 is inspired by xSUSHI, but is superior because rewards are distributed over time rather
 /// than immediately, which prevents MEV bots from stealing the rewards or malicious users staking immediately
 /// before the reward distribution and unstaking immediately after.
-contract xERC20 is CloneERC20, Ownable {
+contract xERC20 is CloneERC20, Ownable, Multicall, SelfPermit {
     /// -----------------------------------------------------------------------
     /// Library usage
     /// -----------------------------------------------------------------------

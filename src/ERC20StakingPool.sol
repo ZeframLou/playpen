@@ -9,12 +9,14 @@ import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
 import {Ownable} from "./lib/Ownable.sol";
 import {FullMath} from "./lib/FullMath.sol";
+import {Multicall} from "./lib/Multicall.sol";
+import {SelfPermit} from "./lib/SelfPermit.sol";
 
 /// @title ERC20StakingPool
 /// @author zefram.eth
 /// @notice A modern, gas optimized staking pool contract for rewarding ERC20 stakers
 /// with ERC20 tokens periodically and continuously
-contract ERC20StakingPool is Ownable, Clone {
+contract ERC20StakingPool is Ownable, Clone, Multicall, SelfPermit {
     /// -----------------------------------------------------------------------
     /// Library usage
     /// -----------------------------------------------------------------------
