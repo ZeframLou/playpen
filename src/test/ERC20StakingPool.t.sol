@@ -79,7 +79,7 @@ contract ERC20StakingPoolTest is BaseTest {
     /// Correctness tests
     /// -------------------------------------------------------------------
 
-    function testCorrectness_stake(uint256 amount, uint56 warpTime) public {
+    function testCorrectness_stake(uint128 amount, uint56 warpTime) public {
         vm.startPrank(tester);
 
         // warp to future
@@ -107,7 +107,7 @@ contract ERC20StakingPoolTest is BaseTest {
     }
 
     function testCorrectness_withdraw(
-        uint256 amount,
+        uint128 amount,
         uint56 warpTime,
         uint56 stakeTime
     ) public {
@@ -279,6 +279,8 @@ contract ERC20StakingPoolTest is BaseTest {
         uint56 warpTime,
         uint8 stakeTimeAsDurationPercentage
     ) public {
+        vm.assume(amount_ > 0);
+
         uint256 amount = amount_;
 
         // warp to some time in the future
