@@ -43,6 +43,8 @@ contract BaseTest is DSTest {
         uint256 decimals,
         uint256 epsilonInv
     ) internal {
+        if(a == 0) a = 1;
+        if(b == 0) b = 1;
         assertLeDecimal(a, b + b / epsilonInv, decimals);
         assertGeDecimal(a, b - b / epsilonInv, decimals);
     }

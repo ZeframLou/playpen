@@ -79,7 +79,11 @@ contract ERC20StakingPoolTest is BaseTest {
     /// Correctness tests
     /// -------------------------------------------------------------------
 
-    function testCorrectness_stake(uint256 amount, uint56 warpTime) public {
+    function testCorrectness_stake(uint128 amount_, uint56 warpTime) public {
+        vm.assume(amount_ > 0);
+        vm.assume(warpTime > 0);
+        uint256 amount = amount_;
+
         vm.startPrank(tester);
 
         // warp to future
@@ -107,10 +111,14 @@ contract ERC20StakingPoolTest is BaseTest {
     }
 
     function testCorrectness_withdraw(
-        uint256 amount,
+        uint128 amount_,
         uint56 warpTime,
         uint56 stakeTime
     ) public {
+        vm.assume(amount_ > 0);
+        vm.assume(warpTime > 0);
+        uint256 amount = amount_;
+
         vm.startPrank(tester);
 
         // warp to future
@@ -148,10 +156,11 @@ contract ERC20StakingPoolTest is BaseTest {
         uint128 amount1_,
         uint8 stakeTimeAsDurationPercentage
     ) public {
+        vm.assume(amount0_ > 0);
+        vm.assume(amount1_ > 0);
+        vm.assume(stakeTimeAsDurationPercentage > 0);
         uint256 amount0 = amount0_;
         uint256 amount1 = amount1_;
-        if (amount0 == 0) amount0 = 1;
-        if (amount1 == 0) amount1 = 1;
 
         /// -----------------------------------------------------------------------
         /// Stake using address(this)
@@ -203,7 +212,7 @@ contract ERC20StakingPoolTest is BaseTest {
                     amount1) /
                 (amount0 + amount1);
         }
-        assertEqDecimalEpsilonBelow(rewardAmount, expectedRewardAmount, 18, 1e8);
+        assertEqDecimalEpsilonBelow(rewardAmount, expectedRewardAmount, 18, 1e4);
     }
 
     function testCorrectness_exit(
@@ -211,10 +220,11 @@ contract ERC20StakingPoolTest is BaseTest {
         uint128 amount1_,
         uint8 stakeTimeAsDurationPercentage
     ) public {
+        vm.assume(amount0_ > 0);
+        vm.assume(amount1_ > 0);
+        vm.assume(stakeTimeAsDurationPercentage > 0);
         uint256 amount0 = amount0_;
         uint256 amount1 = amount1_;
-        if (amount0 == 0) amount0 = 1;
-        if (amount1 == 0) amount1 = 1;
 
         /// -----------------------------------------------------------------------
         /// Stake using address(this)
@@ -260,18 +270,16 @@ contract ERC20StakingPoolTest is BaseTest {
         assertEqDecimal(withdrawAmount, amount1, 18);
         uint256 expectedRewardAmount;
         if (stakeTime >= DURATION) {
-            // past first reward period, all rewards have been distributed
             expectedRewardAmount =
                 (REWARD_AMOUNT * amount1) /
                 (amount0 + amount1);
         } else {
-            // during first reward period, rewards are partially distributed
             expectedRewardAmount =
                 (((REWARD_AMOUNT * stakeTimeAsDurationPercentage) / 100) *
                     amount1) /
                 (amount0 + amount1);
         }
-        assertEqDecimalEpsilonBelow(rewardAmount, expectedRewardAmount, 18, 1e8);
+        assertEqDecimalEpsilonBelow(rewardAmount, expectedRewardAmount, 18, 1e4);
     }
 
     function testCorrectness_notifyRewardAmount(
@@ -279,6 +287,9 @@ contract ERC20StakingPoolTest is BaseTest {
         uint56 warpTime,
         uint8 stakeTimeAsDurationPercentage
     ) public {
+        vm.assume(amount_ > 0);
+        vm.assume(warpTime > 0);
+        vm.assume(stakeTimeAsDurationPercentage > 0);
         uint256 amount = amount_;
 
         // warp to some time in the future
@@ -328,7 +339,7 @@ contract ERC20StakingPoolTest is BaseTest {
                     stakeTimeAsDurationPercentage) /
                 100;
         }
-        assertEqDecimalEpsilonBelow(rewardAmount, expectedRewardAmount, 18, 1e11);
+        assertEqDecimalEpsilonBelow(rewardAmount, expectedRewardAmount, 18, 1e4);
     }
 
     function testFail_cannotReinitialize() public {
