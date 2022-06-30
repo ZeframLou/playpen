@@ -68,7 +68,11 @@ contract xERC20Test is BaseTest {
     /// Correctness tests
     /// -------------------------------------------------------------------
 
-    function testCorrectness_stake(uint256 amount, uint56 warpTime) public {
+    function testCorrectness_stake(uint128 amount_, uint56 warpTime) public {
+        vm.assume(amount_ > 0);
+        vm.assume(warpTime > 0);
+        uint256 amount = amount_;
+
         // deploy fresh pool
         xERC20 stakingPool_ = factory.createXERC20(
             bytes32("Staked SHT"),
@@ -116,10 +120,15 @@ contract xERC20Test is BaseTest {
     }
 
     function testCorrectness_withdraw(
-        uint256 amount,
+        uint128 amount_,
         uint56 warpTime,
         uint56 stakeTime
     ) public {
+        vm.assume(amount_ > 0);
+        vm.assume(warpTime > 0);
+        vm.assume(stakeTime > 0);
+        uint256 amount = amount_;
+
         // deploy fresh pool
         xERC20 stakingPool_ = factory.createXERC20(
             bytes32("Staked SHT"),
@@ -177,6 +186,10 @@ contract xERC20Test is BaseTest {
         uint56 warpTime,
         uint8 stakeTimeAsDurationPercentage
     ) public {
+        vm.assume(amount_ > 0);
+        vm.assume(warpTime > 0);
+        vm.assume(stakeTimeAsDurationPercentage > 0);
+
         // deploy fresh pool
         xERC20 stakingPool_ = factory.createXERC20(
             bytes32("Staked SHT"),
@@ -230,7 +243,7 @@ contract xERC20Test is BaseTest {
             rewardAmount,
             expectedRewardAmount,
             18,
-            1e11
+            1
         );
     }
 

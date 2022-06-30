@@ -94,7 +94,8 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
     /// -------------------------------------------------------------------
 
     function testCorrectness_stake(uint8 amount, uint56 warpTime) public {
-        if (amount == 0) amount = 1;
+        vm.assume(amount > 0);
+        vm.assume(warpTime > 0);
 
         // warp to future
         vm.warp(warpTime);
@@ -131,6 +132,10 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
         uint56 warpTime,
         uint56 stakeTime
     ) public {
+        vm.assume(amount > 0);
+        vm.assume(warpTime > 0);
+        vm.assume(stakeTime > 0);
+
         // warp to future
         vm.warp(warpTime);
 
@@ -172,6 +177,10 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
         uint8 amount1,
         uint8 stakeTimeAsDurationPercentage
     ) public {
+        vm.assume(amount0 > 0);
+        vm.assume(amount1 > 0);
+        vm.assume(stakeTimeAsDurationPercentage > 0);
+
         /// -----------------------------------------------------------------------
         /// Stake using address(this)
         /// -----------------------------------------------------------------------
@@ -227,7 +236,7 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
             rewardAmount,
             expectedRewardAmount,
             18,
-            1e8
+            1e4
         );
     }
 
@@ -236,6 +245,10 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
         uint8 amount1,
         uint8 stakeTimeAsDurationPercentage
     ) public {
+        vm.assume(amount0 > 0);
+        vm.assume(amount1 > 0);
+        vm.assume(stakeTimeAsDurationPercentage > 0);
+
         /// -----------------------------------------------------------------------
         /// Stake using address(this)
         /// -----------------------------------------------------------------------
@@ -296,7 +309,7 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
             rewardAmount,
             expectedRewardAmount,
             18,
-            1e8
+            1e4
         );
     }
 
@@ -305,6 +318,9 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
         uint56 warpTime,
         uint8 stakeTimeAsDurationPercentage
     ) public {
+        vm.assume(amount_ > 0);
+        vm.assume(warpTime > 0);
+        vm.assume(stakeTimeAsDurationPercentage > 0);
         uint256 amount = amount_;
 
         // warp to some time in the future
@@ -358,7 +374,7 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
             rewardAmount,
             expectedRewardAmount,
             18,
-            1e11
+            1e4
         );
     }
 

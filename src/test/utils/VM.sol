@@ -3,6 +3,9 @@
 pragma solidity ^0.8.4;
 
 interface VM {
+    // When fuzzing, generate new inputs if conditional not met
+    function assume(bool) external;
+
     // Set block.timestamp (newTimestamp)
     function warp(uint256) external;
 
