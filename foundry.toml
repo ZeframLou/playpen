@@ -1,7 +1,17 @@
-[default]
-ffi = false
-fuzz_runs = 256
-optimizer = true
+[profile.default]
 optimizer_runs = 1000000
-remappings = ["ds-test/=lib/ds-test/src/", "solmate/=lib/solmate/src/", "@clones/=lib/clones-with-immutable-args/src/"]
 verbosity = 1
+remappings = ["@clones/=lib/clones-with-immutable-args/src/"]
+
+# Extreme Fuzzing CI Profile :P
+[profile.ci]
+fuzz_runs = 100_000
+verbosity = 4
+
+[rpc_endpoints]
+goerli = "${RPC_URL_GOERLI}"
+mainnet = "${RPC_URL_MAINNET}"
+
+[etherscan]
+goerli = {key = "${ETHERSCAN_KEY}", url = "https://api-goerli.etherscan.io/api"}
+mainnet = {key = "${ETHERSCAN_KEY}"}
