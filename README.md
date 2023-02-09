@@ -12,6 +12,10 @@ Playpen is a set of modern, gas optimized staking pool contracts.
 -   Fuzz tests powered by [Foundry](https://github.com/gakonst/foundry)
 -   Cheap deployment using `ClonesWithCallData` (~81.7k gas)
 
+## Deployment
+
+`1.0.0` has been deployed to Ethereum mainnet at [0x94c563eD6Ef8848B987Bec3fE16E12023dc830Bc](https://etherscan.io/address/0x94c563eD6Ef8848B987Bec3fE16E12023dc830Bc)
+
 ## Installation
 
 To install with [DappTools](https://github.com/dapphub/dapptools):
