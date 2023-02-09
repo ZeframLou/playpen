@@ -60,20 +60,11 @@ contract StakingPoolFactory {
     /// @param stakeToken The token being staked in the pool
     /// @param DURATION The length of each reward period, in seconds
     /// @return stakingPool The created xERC20 contract
-    function createXERC20(
-        bytes32 name,
-        bytes32 symbol,
-        uint8 decimals,
-        ERC20 stakeToken,
-        uint64 DURATION
-    ) external returns (xERC20 stakingPool) {
-        bytes memory data = abi.encodePacked(
-            name,
-            symbol,
-            decimals,
-            stakeToken,
-            DURATION
-        );
+    function createXERC20(bytes32 name, bytes32 symbol, uint8 decimals, ERC20 stakeToken, uint64 DURATION)
+        external
+        returns (xERC20 stakingPool)
+    {
+        bytes memory data = abi.encodePacked(name, symbol, decimals, stakeToken, DURATION);
 
         stakingPool = xERC20(address(xERC20Implementation).clone(data));
         stakingPool.initialize(msg.sender);
@@ -88,16 +79,13 @@ contract StakingPoolFactory {
     /// @param stakeToken The token being staked in the pool
     /// @param DURATION The length of each reward period, in seconds
     /// @return stakingPool The created ERC20StakingPool contract
-    function createERC20StakingPool(
-        ERC20 rewardToken,
-        ERC20 stakeToken,
-        uint64 DURATION
-    ) external returns (ERC20StakingPool stakingPool) {
+    function createERC20StakingPool(ERC20 rewardToken, ERC20 stakeToken, uint64 DURATION)
+        external
+        returns (ERC20StakingPool stakingPool)
+    {
         bytes memory data = abi.encodePacked(rewardToken, stakeToken, DURATION);
 
-        stakingPool = ERC20StakingPool(
-            address(erc20StakingPoolImplementation).clone(data)
-        );
+        stakingPool = ERC20StakingPool(address(erc20StakingPoolImplementation).clone(data));
         stakingPool.initialize(msg.sender);
 
         emit CreateERC20StakingPool(stakingPool);
@@ -110,16 +98,13 @@ contract StakingPoolFactory {
     /// @param stakeToken The token being staked in the pool
     /// @param DURATION The length of each reward period, in seconds
     /// @return stakingPool The created ERC721StakingPool contract
-    function createERC721StakingPool(
-        ERC20 rewardToken,
-        ERC721 stakeToken,
-        uint64 DURATION
-    ) external returns (ERC721StakingPool stakingPool) {
+    function createERC721StakingPool(ERC20 rewardToken, ERC721 stakeToken, uint64 DURATION)
+        external
+        returns (ERC721StakingPool stakingPool)
+    {
         bytes memory data = abi.encodePacked(rewardToken, stakeToken, DURATION);
 
-        stakingPool = ERC721StakingPool(
-            address(erc721StakingPoolImplementation).clone(data)
-        );
+        stakingPool = ERC721StakingPool(address(erc721StakingPoolImplementation).clone(data));
         stakingPool.initialize(msg.sender);
 
         emit CreateERC721StakingPool(stakingPool);

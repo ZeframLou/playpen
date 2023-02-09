@@ -8,10 +8,7 @@ abstract contract Ownable {
 
     address private _owner;
 
-    event OwnershipTransferred(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     /// @dev Returns the address of the current owner.
     function owner() public view virtual returns (address) {

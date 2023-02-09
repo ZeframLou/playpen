@@ -1,7 +1,7 @@
 [profile.default]
 optimizer_runs = 1000000
+remappings = ["@clones/=lib/clones-with-immutable-args/src/", "create3-factory/=lib/create3-factory/src/"]
 verbosity = 1
-remappings = ["@clones/=lib/clones-with-immutable-args/src/"]
 
 # Extreme Fuzzing CI Profile :P
 [profile.ci]

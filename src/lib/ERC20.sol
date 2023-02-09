@@ -14,11 +14,7 @@ abstract contract ERC20 is Clone {
 
     event Transfer(address indexed from, address indexed to, uint256 amount);
 
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 amount
-    );
+    event Approval(address indexed owner, address indexed spender, uint256 amount);
 
     /*///////////////////////////////////////////////////////////////
                               ERC20 STORAGE
@@ -50,11 +46,7 @@ abstract contract ERC20 is Clone {
                               ERC20 LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    function approve(address spender, uint256 amount)
-        public
-        virtual
-        returns (bool)
-    {
+    function approve(address spender, uint256 amount) public virtual returns (bool) {
         allowance[msg.sender][spender] = amount;
 
         emit Approval(msg.sender, spender, amount);
@@ -62,11 +54,7 @@ abstract contract ERC20 is Clone {
         return true;
     }
 
-    function transfer(address to, uint256 amount)
-        public
-        virtual
-        returns (bool)
-    {
+    function transfer(address to, uint256 amount) public virtual returns (bool) {
         balanceOf[msg.sender] -= amount;
 
         // Cannot overflow because the sum of all user
@@ -80,15 +68,12 @@ abstract contract ERC20 is Clone {
         return true;
     }
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) public virtual returns (bool) {
+    function transferFrom(address from, address to, uint256 amount) public virtual returns (bool) {
         uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
 
-        if (allowed != type(uint256).max)
+        if (allowed != type(uint256).max) {
             allowance[from][msg.sender] = allowed - amount;
+        }
 
         balanceOf[from] -= amount;
 
@@ -131,16 +116,9 @@ abstract contract ERC20 is Clone {
         emit Transfer(from, address(0), amount);
     }
 
-    function _getImmutableVariablesOffset()
-        internal
-        pure
-        returns (uint256 offset)
-    {
+    function _getImmutableVariablesOffset() internal pure returns (uint256 offset) {
         assembly {
-            offset := sub(
-                calldatasize(),
-                add(shr(240, calldataload(sub(calldatasize(), 2))), 2)
-            )
+            offset := sub(calldatasize(), add(shr(240, calldataload(sub(calldatasize(), 2))), 2))
         }
     }
 }

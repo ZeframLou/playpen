@@ -35,12 +35,7 @@ contract StakingPoolFactoryTest is BaseTest {
     /// Gas benchmarking
     /// -------------------------------------------------------------------
 
-    function testGas_createXERC20(
-        bytes32 name,
-        bytes32 symbol,
-        uint8 decimals,
-        uint64 DURATION
-    ) public {
+    function testGas_createXERC20(bytes32 name, bytes32 symbol, uint8 decimals, uint64 DURATION) public {
         factory.createXERC20(name, symbol, decimals, stakeToken, DURATION);
     }
 
@@ -56,19 +51,8 @@ contract StakingPoolFactoryTest is BaseTest {
     /// Correctness tests
     /// -------------------------------------------------------------------
 
-    function testCorrectness_createXERC20(
-        bytes32 name,
-        bytes32 symbol,
-        uint8 decimals,
-        uint64 DURATION
-    ) public {
-        xERC20 stakingPool = factory.createXERC20(
-            name,
-            symbol,
-            decimals,
-            stakeToken,
-            DURATION
-        );
+    function testCorrectness_createXERC20(bytes32 name, bytes32 symbol, uint8 decimals, uint64 DURATION) public {
+        xERC20 stakingPool = factory.createXERC20(name, symbol, decimals, stakeToken, DURATION);
 
         assertEq(stakingPool.name(), string(abi.encodePacked(name)));
         assertEq(stakingPool.symbol(), string(abi.encodePacked(symbol)));
@@ -78,11 +62,7 @@ contract StakingPoolFactoryTest is BaseTest {
     }
 
     function testCorrectness_createERC20StakingPool(uint64 DURATION) public {
-        ERC20StakingPool stakingPool = factory.createERC20StakingPool(
-            rewardToken,
-            stakeToken,
-            DURATION
-        );
+        ERC20StakingPool stakingPool = factory.createERC20StakingPool(rewardToken, stakeToken, DURATION);
 
         assertEq(address(stakingPool.rewardToken()), address(rewardToken));
         assertEq(address(stakingPool.stakeToken()), address(stakeToken));
@@ -90,11 +70,7 @@ contract StakingPoolFactoryTest is BaseTest {
     }
 
     function testCorrectness_createERC721StakingPool(uint64 DURATION) public {
-        ERC721StakingPool stakingPool = factory.createERC721StakingPool(
-            rewardToken,
-            stakeNFT,
-            DURATION
-        );
+        ERC721StakingPool stakingPool = factory.createERC721StakingPool(rewardToken, stakeNFT, DURATION);
 
         assertEq(address(stakingPool.rewardToken()), address(rewardToken));
         assertEq(address(stakingPool.stakeToken()), address(stakeNFT));

@@ -32,11 +32,7 @@ contract ERC20StakingPoolTest is BaseTest {
         rewardToken = new TestERC20();
         stakeToken = new TestERC20();
 
-        stakingPool = factory.createERC20StakingPool(
-            rewardToken,
-            stakeToken,
-            DURATION
-        );
+        stakingPool = factory.createERC20StakingPool(rewardToken, stakeToken, DURATION);
 
         rewardToken.mint(address(this), 1000 ether);
         stakeToken.mint(address(this), 1000 ether);
@@ -93,28 +89,17 @@ contract ERC20StakingPoolTest is BaseTest {
         stakeToken.mint(tester, amount);
 
         // stake
-        uint256 beforeStakingPoolStakeTokenBalance = stakeToken.balanceOf(
-            address(stakingPool)
-        );
+        uint256 beforeStakingPoolStakeTokenBalance = stakeToken.balanceOf(address(stakingPool));
         stakeToken.approve(address(stakingPool), amount);
         stakingPool.stake(amount);
 
         // check balance
         assertEqDecimal(stakeToken.balanceOf(tester), 0, 18);
-        assertEqDecimal(
-            stakeToken.balanceOf(address(stakingPool)) -
-                beforeStakingPoolStakeTokenBalance,
-            amount,
-            18
-        );
+        assertEqDecimal(stakeToken.balanceOf(address(stakingPool)) - beforeStakingPoolStakeTokenBalance, amount, 18);
         assertEqDecimal(stakingPool.balanceOf(tester), amount, 18);
     }
 
-    function testCorrectness_withdraw(
-        uint128 amount_,
-        uint56 warpTime,
-        uint56 stakeTime
-    ) public {
+    function testCorrectness_withdraw(uint128 amount_, uint56 warpTime, uint56 stakeTime) public {
         vm.assume(amount_ > 0);
         vm.assume(warpTime > 0);
         uint256 amount = amount_;
@@ -128,9 +113,7 @@ contract ERC20StakingPoolTest is BaseTest {
         stakeToken.mint(tester, amount);
 
         // stake
-        uint256 beforeStakingPoolStakeTokenBalance = stakeToken.balanceOf(
-            address(stakingPool)
-        );
+        uint256 beforeStakingPoolStakeTokenBalance = stakeToken.balanceOf(address(stakingPool));
         stakeToken.approve(address(stakingPool), amount);
         stakingPool.stake(amount);
 
@@ -142,20 +125,13 @@ contract ERC20StakingPoolTest is BaseTest {
 
         // check balance
         assertEqDecimal(stakeToken.balanceOf(tester), amount, 18);
-        assertEqDecimal(
-            stakeToken.balanceOf(address(stakingPool)) -
-                beforeStakingPoolStakeTokenBalance,
-            0,
-            18
-        );
+        assertEqDecimal(stakeToken.balanceOf(address(stakingPool)) - beforeStakingPoolStakeTokenBalance, 0, 18);
         assertEqDecimal(stakingPool.balanceOf(tester), 0, 18);
     }
 
-    function testCorrectness_getReward(
-        uint128 amount0_,
-        uint128 amount1_,
-        uint8 stakeTimeAsDurationPercentage
-    ) public {
+    function testCorrectness_getReward(uint128 amount0_, uint128 amount1_, uint8 stakeTimeAsDurationPercentage)
+        public
+    {
         vm.assume(amount0_ > 0);
         vm.assume(amount1_ > 0);
         vm.assume(stakeTimeAsDurationPercentage > 0);
@@ -189,8 +165,7 @@ contract ERC20StakingPoolTest is BaseTest {
         stakingPool.stake(amount1);
 
         // warp to simulate staking
-        uint256 stakeTime = (DURATION *
-            uint256(stakeTimeAsDurationPercentage)) / 100;
+        uint256 stakeTime = (DURATION * uint256(stakeTimeAsDurationPercentage)) / 100;
         vm.warp(stakeTime);
 
         // get reward
@@ -202,24 +177,16 @@ contract ERC20StakingPoolTest is BaseTest {
         uint256 expectedRewardAmount;
         if (stakeTime >= DURATION) {
             // past first reward period, all rewards have been distributed
-            expectedRewardAmount =
-                (REWARD_AMOUNT * amount1) /
-                (amount0 + amount1);
+            expectedRewardAmount = (REWARD_AMOUNT * amount1) / (amount0 + amount1);
         } else {
             // during first reward period, rewards are partially distributed
             expectedRewardAmount =
-                (((REWARD_AMOUNT * stakeTimeAsDurationPercentage) / 100) *
-                    amount1) /
-                (amount0 + amount1);
+                (((REWARD_AMOUNT * stakeTimeAsDurationPercentage) / 100) * amount1) / (amount0 + amount1);
         }
         assertEqDecimalEpsilonBelow(rewardAmount, expectedRewardAmount, 18, 1e4);
     }
 
-    function testCorrectness_exit(
-        uint128 amount0_,
-        uint128 amount1_,
-        uint8 stakeTimeAsDurationPercentage
-    ) public {
+    function testCorrectness_exit(uint128 amount0_, uint128 amount1_, uint8 stakeTimeAsDurationPercentage) public {
         vm.assume(amount0_ > 0);
         vm.assume(amount1_ > 0);
         vm.assume(stakeTimeAsDurationPercentage > 0);
@@ -253,40 +220,31 @@ contract ERC20StakingPoolTest is BaseTest {
         stakingPool.stake(amount1);
 
         // warp to simulate staking
-        uint256 stakeTime = (DURATION *
-            uint256(stakeTimeAsDurationPercentage)) / 100;
+        uint256 stakeTime = (DURATION * uint256(stakeTimeAsDurationPercentage)) / 100;
         vm.warp(stakeTime);
 
         // exit
         uint256 beforeStakeTokenBalance = stakeToken.balanceOf(tester);
         uint256 beforeRewardTokenBalance = rewardToken.balanceOf(tester);
         stakingPool.exit();
-        uint256 withdrawAmount = stakeToken.balanceOf(tester) -
-            beforeStakeTokenBalance;
-        uint256 rewardAmount = rewardToken.balanceOf(tester) -
-            beforeRewardTokenBalance;
+        uint256 withdrawAmount = stakeToken.balanceOf(tester) - beforeStakeTokenBalance;
+        uint256 rewardAmount = rewardToken.balanceOf(tester) - beforeRewardTokenBalance;
 
         // check assertions
         assertEqDecimal(withdrawAmount, amount1, 18);
         uint256 expectedRewardAmount;
         if (stakeTime >= DURATION) {
-            expectedRewardAmount =
-                (REWARD_AMOUNT * amount1) /
-                (amount0 + amount1);
+            expectedRewardAmount = (REWARD_AMOUNT * amount1) / (amount0 + amount1);
         } else {
             expectedRewardAmount =
-                (((REWARD_AMOUNT * stakeTimeAsDurationPercentage) / 100) *
-                    amount1) /
-                (amount0 + amount1);
+                (((REWARD_AMOUNT * stakeTimeAsDurationPercentage) / 100) * amount1) / (amount0 + amount1);
         }
         assertEqDecimalEpsilonBelow(rewardAmount, expectedRewardAmount, 18, 1e4);
     }
 
-    function testCorrectness_notifyRewardAmount(
-        uint128 amount_,
-        uint56 warpTime,
-        uint8 stakeTimeAsDurationPercentage
-    ) public {
+    function testCorrectness_notifyRewardAmount(uint128 amount_, uint56 warpTime, uint8 stakeTimeAsDurationPercentage)
+        public
+    {
         vm.assume(amount_ > 0);
         vm.assume(warpTime > 0);
         vm.assume(stakeTimeAsDurationPercentage > 0);
@@ -298,8 +256,7 @@ contract ERC20StakingPoolTest is BaseTest {
         // get earned reward amount from existing rewards
         uint256 beforeBalance = rewardToken.balanceOf(address(this));
         stakingPool.getReward();
-        uint256 rewardAmount = rewardToken.balanceOf(address(this)) -
-            beforeBalance;
+        uint256 rewardAmount = rewardToken.balanceOf(address(this)) - beforeBalance;
 
         // compute expected earned rewards
         uint256 expectedRewardAmount;
@@ -319,8 +276,7 @@ contract ERC20StakingPoolTest is BaseTest {
         stakingPool.notifyRewardAmount(amount);
 
         // warp to simulate staking
-        uint256 stakeTime = (DURATION *
-            uint256(stakeTimeAsDurationPercentage)) / 100;
+        uint256 stakeTime = (DURATION * uint256(stakeTimeAsDurationPercentage)) / 100;
         vm.warp(warpTime + stakeTime);
 
         // get reward
@@ -334,10 +290,7 @@ contract ERC20StakingPoolTest is BaseTest {
             expectedRewardAmount += leftoverRewardAmount + amount;
         } else {
             // during second reward period, rewards are partially distributed
-            expectedRewardAmount +=
-                ((leftoverRewardAmount + amount) *
-                    stakeTimeAsDurationPercentage) /
-                100;
+            expectedRewardAmount += ((leftoverRewardAmount + amount) * stakeTimeAsDurationPercentage) / 100;
         }
         assertEqDecimalEpsilonBelow(rewardAmount, expectedRewardAmount, 18, 1e4);
     }

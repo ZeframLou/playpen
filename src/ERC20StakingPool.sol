@@ -131,11 +131,7 @@ contract ERC20StakingPool is Ownable, Clone, Multicall, SelfPermit {
         uint256 accountBalance = balanceOf[msg.sender];
         uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
         uint256 totalSupply_ = totalSupply;
-        uint256 rewardPerToken_ = _rewardPerToken(
-            totalSupply_,
-            lastTimeRewardApplicable_,
-            rewardRate
-        );
+        uint256 rewardPerToken_ = _rewardPerToken(totalSupply_, lastTimeRewardApplicable_, rewardRate);
 
         /// -----------------------------------------------------------------------
         /// State updates
@@ -144,12 +140,7 @@ contract ERC20StakingPool is Ownable, Clone, Multicall, SelfPermit {
         // accrue rewards
         rewardPerTokenStored = rewardPerToken_;
         lastUpdateTime = lastTimeRewardApplicable_;
-        rewards[msg.sender] = _earned(
-            msg.sender,
-            accountBalance,
-            rewardPerToken_,
-            rewards[msg.sender]
-        );
+        rewards[msg.sender] = _earned(msg.sender, accountBalance, rewardPerToken_, rewards[msg.sender]);
         userRewardPerTokenPaid[msg.sender] = rewardPerToken_;
 
         // stake
@@ -183,11 +174,7 @@ contract ERC20StakingPool is Ownable, Clone, Multicall, SelfPermit {
         uint256 accountBalance = balanceOf[msg.sender];
         uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
         uint256 totalSupply_ = totalSupply;
-        uint256 rewardPerToken_ = _rewardPerToken(
-            totalSupply_,
-            lastTimeRewardApplicable_,
-            rewardRate
-        );
+        uint256 rewardPerToken_ = _rewardPerToken(totalSupply_, lastTimeRewardApplicable_, rewardRate);
 
         /// -----------------------------------------------------------------------
         /// State updates
@@ -196,12 +183,7 @@ contract ERC20StakingPool is Ownable, Clone, Multicall, SelfPermit {
         // accrue rewards
         rewardPerTokenStored = rewardPerToken_;
         lastUpdateTime = lastTimeRewardApplicable_;
-        rewards[msg.sender] = _earned(
-            msg.sender,
-            accountBalance,
-            rewardPerToken_,
-            rewards[msg.sender]
-        );
+        rewards[msg.sender] = _earned(msg.sender, accountBalance, rewardPerToken_, rewards[msg.sender]);
         userRewardPerTokenPaid[msg.sender] = rewardPerToken_;
 
         // withdraw stake
@@ -235,23 +217,14 @@ contract ERC20StakingPool is Ownable, Clone, Multicall, SelfPermit {
 
         uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
         uint256 totalSupply_ = totalSupply;
-        uint256 rewardPerToken_ = _rewardPerToken(
-            totalSupply_,
-            lastTimeRewardApplicable_,
-            rewardRate
-        );
+        uint256 rewardPerToken_ = _rewardPerToken(totalSupply_, lastTimeRewardApplicable_, rewardRate);
 
         /// -----------------------------------------------------------------------
         /// State updates
         /// -----------------------------------------------------------------------
 
         // give rewards
-        uint256 reward = _earned(
-            msg.sender,
-            accountBalance,
-            rewardPerToken_,
-            rewards[msg.sender]
-        );
+        uint256 reward = _earned(msg.sender, accountBalance, rewardPerToken_, rewards[msg.sender]);
         if (reward > 0) {
             rewards[msg.sender] = 0;
         }
@@ -293,22 +266,13 @@ contract ERC20StakingPool is Ownable, Clone, Multicall, SelfPermit {
         uint256 accountBalance = balanceOf[msg.sender];
         uint64 lastTimeRewardApplicable_ = lastTimeRewardApplicable();
         uint256 totalSupply_ = totalSupply;
-        uint256 rewardPerToken_ = _rewardPerToken(
-            totalSupply_,
-            lastTimeRewardApplicable_,
-            rewardRate
-        );
+        uint256 rewardPerToken_ = _rewardPerToken(totalSupply_, lastTimeRewardApplicable_, rewardRate);
 
         /// -----------------------------------------------------------------------
         /// State updates
         /// -----------------------------------------------------------------------
 
-        uint256 reward = _earned(
-            msg.sender,
-            accountBalance,
-            rewardPerToken_,
-            rewards[msg.sender]
-        );
+        uint256 reward = _earned(msg.sender, accountBalance, rewardPerToken_, rewards[msg.sender]);
 
         // accrue rewards
         rewardPerTokenStored = rewardPerToken_;
@@ -334,36 +298,23 @@ contract ERC20StakingPool is Ownable, Clone, Multicall, SelfPermit {
 
     /// @notice The latest time at which stakers are earning rewards.
     function lastTimeRewardApplicable() public view returns (uint64) {
-        return
-            block.timestamp < periodFinish
-                ? uint64(block.timestamp)
-                : periodFinish;
+        return block.timestamp < periodFinish ? uint64(block.timestamp) : periodFinish;
     }
 
     /// @notice The amount of reward tokens each staked token has earned so far
     function rewardPerToken() external view returns (uint256) {
-        return
-            _rewardPerToken(
-                totalSupply,
-                lastTimeRewardApplicable(),
-                rewardRate
-            );
+        return _rewardPerToken(totalSupply, lastTimeRewardApplicable(), rewardRate);
     }
 
     /// @notice The amount of reward tokens an account has accrued so far. Does not
     /// include already withdrawn rewards.
     function earned(address account) external view returns (uint256) {
-        return
-            _earned(
-                account,
-                balanceOf[account],
-                _rewardPerToken(
-                    totalSupply,
-                    lastTimeRewardApplicable(),
-                    rewardRate
-                ),
-                rewards[account]
-            );
+        return _earned(
+            account,
+            balanceOf[account],
+            _rewardPerToken(totalSupply, lastTimeRewardApplicable(), rewardRate),
+            rewards[account]
+        );
     }
 
     /// -----------------------------------------------------------------------
@@ -396,9 +347,7 @@ contract ERC20StakingPool is Ownable, Clone, Multicall, SelfPermit {
 
         uint256 rewardRate_ = rewardRate;
         uint64 periodFinish_ = periodFinish;
-        uint64 lastTimeRewardApplicable_ = block.timestamp < periodFinish_
-            ? uint64(block.timestamp)
-            : periodFinish_;
+        uint64 lastTimeRewardApplicable_ = block.timestamp < periodFinish_ ? uint64(block.timestamp) : periodFinish_;
         uint64 DURATION_ = DURATION();
         uint256 totalSupply_ = totalSupply;
 
@@ -407,11 +356,7 @@ contract ERC20StakingPool is Ownable, Clone, Multicall, SelfPermit {
         /// -----------------------------------------------------------------------
 
         // accrue rewards
-        rewardPerTokenStored = _rewardPerToken(
-            totalSupply_,
-            lastTimeRewardApplicable_,
-            rewardRate_
-        );
+        rewardPerTokenStored = _rewardPerToken(totalSupply_, lastTimeRewardApplicable_, rewardRate_);
         lastUpdateTime = lastTimeRewardApplicable_;
 
         // record new reward
@@ -438,10 +383,7 @@ contract ERC20StakingPool is Ownable, Clone, Multicall, SelfPermit {
     /// Reward distributors can call notifyRewardAmount()
     /// @param rewardDistributor The account to add/remove
     /// @param isRewardDistributor_ True to add the account, false to remove the account
-    function setRewardDistributor(
-        address rewardDistributor,
-        bool isRewardDistributor_
-    ) external onlyOwner {
+    function setRewardDistributor(address rewardDistributor, bool isRewardDistributor_) external onlyOwner {
         isRewardDistributor[rewardDistributor] = isRewardDistributor_;
     }
 
@@ -449,47 +391,30 @@ contract ERC20StakingPool is Ownable, Clone, Multicall, SelfPermit {
     /// Internal functions
     /// -----------------------------------------------------------------------
 
-    function _earned(
-        address account,
-        uint256 accountBalance,
-        uint256 rewardPerToken_,
-        uint256 accountRewards
-    ) internal view returns (uint256) {
-        return
-            FullMath.mulDiv(
-                accountBalance,
-                rewardPerToken_ - userRewardPerTokenPaid[account],
-                PRECISION
-            ) + accountRewards;
+    function _earned(address account, uint256 accountBalance, uint256 rewardPerToken_, uint256 accountRewards)
+        internal
+        view
+        returns (uint256)
+    {
+        return FullMath.mulDiv(accountBalance, rewardPerToken_ - userRewardPerTokenPaid[account], PRECISION)
+            + accountRewards;
     }
 
-    function _rewardPerToken(
-        uint256 totalSupply_,
-        uint256 lastTimeRewardApplicable_,
-        uint256 rewardRate_
-    ) internal view returns (uint256) {
+    function _rewardPerToken(uint256 totalSupply_, uint256 lastTimeRewardApplicable_, uint256 rewardRate_)
+        internal
+        view
+        returns (uint256)
+    {
         if (totalSupply_ == 0) {
             return rewardPerTokenStored;
         }
-        return
-            rewardPerTokenStored +
-            FullMath.mulDiv(
-                (lastTimeRewardApplicable_ - lastUpdateTime) * PRECISION,
-                rewardRate_,
-                totalSupply_
-            );
+        return rewardPerTokenStored
+            + FullMath.mulDiv((lastTimeRewardApplicable_ - lastUpdateTime) * PRECISION, rewardRate_, totalSupply_);
     }
 
-    function _getImmutableVariablesOffset()
-        internal
-        pure
-        returns (uint256 offset)
-    {
+    function _getImmutableVariablesOffset() internal pure returns (uint256 offset) {
         assembly {
-            offset := sub(
-                calldatasize(),
-                add(shr(240, calldataload(sub(calldatasize(), 2))), 2)
-            )
+            offset := sub(calldatasize(), add(shr(240, calldataload(sub(calldatasize(), 2))), 2))
         }
     }
 }

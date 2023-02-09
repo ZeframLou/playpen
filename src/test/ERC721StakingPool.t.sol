@@ -37,11 +37,7 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
         rewardToken = new TestERC20();
         stakeToken = new TestERC721();
 
-        stakingPool = factory.createERC721StakingPool(
-            rewardToken,
-            stakeToken,
-            DURATION
-        );
+        stakingPool = factory.createERC721StakingPool(rewardToken, stakeToken, DURATION);
 
         rewardToken.mint(address(this), 1000 ether);
         for (uint256 i = 0; i < INIT_NFT_BALANCE; i++) {
@@ -102,36 +98,18 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
 
         // stake
         uint256 beforeThisStakedBalance = stakingPool.balanceOf(address(this));
-        uint256 beforeThisStakeTokenBalance = stakeToken.balanceOf(
-            address(this)
-        );
-        uint256 beforeStakingPoolStakeTokenBalance = stakeToken.balanceOf(
-            address(stakingPool)
-        );
+        uint256 beforeThisStakeTokenBalance = stakeToken.balanceOf(address(this));
+        uint256 beforeStakingPoolStakeTokenBalance = stakeToken.balanceOf(address(stakingPool));
         uint256[] memory idList = _getIdList(INIT_STAKE_BALANCE, amount);
         stakingPool.stake(idList);
 
         // check balance
-        assertEq(
-            beforeThisStakeTokenBalance - stakeToken.balanceOf(address(this)),
-            amount
-        );
-        assertEq(
-            stakeToken.balanceOf(address(stakingPool)) -
-                beforeStakingPoolStakeTokenBalance,
-            amount
-        );
-        assertEq(
-            stakingPool.balanceOf(address(this)) - beforeThisStakedBalance,
-            amount
-        );
+        assertEq(beforeThisStakeTokenBalance - stakeToken.balanceOf(address(this)), amount);
+        assertEq(stakeToken.balanceOf(address(stakingPool)) - beforeStakingPoolStakeTokenBalance, amount);
+        assertEq(stakingPool.balanceOf(address(this)) - beforeThisStakedBalance, amount);
     }
 
-    function testCorrectness_withdraw(
-        uint8 amount,
-        uint56 warpTime,
-        uint56 stakeTime
-    ) public {
+    function testCorrectness_withdraw(uint8 amount, uint56 warpTime, uint56 stakeTime) public {
         vm.assume(amount > 0);
         vm.assume(warpTime > 0);
         vm.assume(stakeTime > 0);
@@ -148,35 +126,17 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
 
         // withdraw
         uint256 beforeThisStakedBalance = stakingPool.balanceOf(address(this));
-        uint256 beforeThisStakeTokenBalance = stakeToken.balanceOf(
-            address(this)
-        );
-        uint256 beforeStakingPoolStakeTokenBalance = stakeToken.balanceOf(
-            address(stakingPool)
-        );
+        uint256 beforeThisStakeTokenBalance = stakeToken.balanceOf(address(this));
+        uint256 beforeStakingPoolStakeTokenBalance = stakeToken.balanceOf(address(stakingPool));
         stakingPool.withdraw(idList);
 
         // check balance
-        assertEq(
-            stakeToken.balanceOf(address(this)) - beforeThisStakeTokenBalance,
-            amount
-        );
-        assertEq(
-            beforeStakingPoolStakeTokenBalance -
-                stakeToken.balanceOf(address(stakingPool)),
-            amount
-        );
-        assertEq(
-            beforeThisStakedBalance - stakingPool.balanceOf(address(this)),
-            amount
-        );
+        assertEq(stakeToken.balanceOf(address(this)) - beforeThisStakeTokenBalance, amount);
+        assertEq(beforeStakingPoolStakeTokenBalance - stakeToken.balanceOf(address(stakingPool)), amount);
+        assertEq(beforeThisStakedBalance - stakingPool.balanceOf(address(this)), amount);
     }
 
-    function testCorrectness_getReward(
-        uint8 amount0,
-        uint8 amount1,
-        uint8 stakeTimeAsDurationPercentage
-    ) public {
+    function testCorrectness_getReward(uint8 amount0, uint8 amount1, uint8 stakeTimeAsDurationPercentage) public {
         vm.assume(amount0 > 0);
         vm.assume(amount1 > 0);
         vm.assume(stakeTimeAsDurationPercentage > 0);
@@ -209,8 +169,7 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
         stakingPool.stake(idList);
 
         // warp to simulate staking
-        uint256 stakeTime = (DURATION *
-            uint256(stakeTimeAsDurationPercentage)) / 100;
+        uint256 stakeTime = (DURATION * uint256(stakeTimeAsDurationPercentage)) / 100;
         vm.warp(stakeTime);
 
         // get reward
@@ -222,29 +181,16 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
         uint256 expectedRewardAmount;
         if (stakeTime >= DURATION) {
             // past first reward period, all rewards have been distributed
-            expectedRewardAmount =
-                (REWARD_AMOUNT * uint256(amount1)) /
-                (uint256(amount0) + uint256(amount1));
+            expectedRewardAmount = (REWARD_AMOUNT * uint256(amount1)) / (uint256(amount0) + uint256(amount1));
         } else {
             // during first reward period, rewards are partially distributed
-            expectedRewardAmount =
-                (((REWARD_AMOUNT * stakeTimeAsDurationPercentage) / 100) *
-                    uint256(amount1)) /
-                (uint256(amount0) + uint256(amount1));
+            expectedRewardAmount = (((REWARD_AMOUNT * stakeTimeAsDurationPercentage) / 100) * uint256(amount1))
+                / (uint256(amount0) + uint256(amount1));
         }
-        assertEqDecimalEpsilonBelow(
-            rewardAmount,
-            expectedRewardAmount,
-            18,
-            1e4
-        );
+        assertEqDecimalEpsilonBelow(rewardAmount, expectedRewardAmount, 18, 1e4);
     }
 
-    function testCorrectness_exit(
-        uint8 amount0,
-        uint8 amount1,
-        uint8 stakeTimeAsDurationPercentage
-    ) public {
+    function testCorrectness_exit(uint8 amount0, uint8 amount1, uint8 stakeTimeAsDurationPercentage) public {
         vm.assume(amount0 > 0);
         vm.assume(amount1 > 0);
         vm.assume(stakeTimeAsDurationPercentage > 0);
@@ -277,47 +223,33 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
         stakingPool.stake(idList);
 
         // warp to simulate staking
-        uint256 stakeTime = (DURATION *
-            uint256(stakeTimeAsDurationPercentage)) / 100;
+        uint256 stakeTime = (DURATION * uint256(stakeTimeAsDurationPercentage)) / 100;
         vm.warp(stakeTime);
 
         // exit
         uint256 beforeStakeTokenBalance = stakeToken.balanceOf(tester);
         uint256 beforeRewardTokenBalance = rewardToken.balanceOf(tester);
         stakingPool.exit(idList);
-        uint256 withdrawAmount = stakeToken.balanceOf(tester) -
-            beforeStakeTokenBalance;
-        uint256 rewardAmount = rewardToken.balanceOf(tester) -
-            beforeRewardTokenBalance;
+        uint256 withdrawAmount = stakeToken.balanceOf(tester) - beforeStakeTokenBalance;
+        uint256 rewardAmount = rewardToken.balanceOf(tester) - beforeRewardTokenBalance;
 
         // check assertions
         assertEq(withdrawAmount, amount1);
         uint256 expectedRewardAmount;
         if (stakeTime >= DURATION) {
             // past first reward period, all rewards have been distributed
-            expectedRewardAmount =
-                (REWARD_AMOUNT * uint256(amount1)) /
-                (uint256(amount0) + uint256(amount1));
+            expectedRewardAmount = (REWARD_AMOUNT * uint256(amount1)) / (uint256(amount0) + uint256(amount1));
         } else {
             // during first reward period, rewards are partially distributed
-            expectedRewardAmount =
-                (((REWARD_AMOUNT * stakeTimeAsDurationPercentage) / 100) *
-                    uint256(amount1)) /
-                (uint256(amount0) + uint256(amount1));
+            expectedRewardAmount = (((REWARD_AMOUNT * stakeTimeAsDurationPercentage) / 100) * uint256(amount1))
+                / (uint256(amount0) + uint256(amount1));
         }
-        assertEqDecimalEpsilonBelow(
-            rewardAmount,
-            expectedRewardAmount,
-            18,
-            1e4
-        );
+        assertEqDecimalEpsilonBelow(rewardAmount, expectedRewardAmount, 18, 1e4);
     }
 
-    function testCorrectness_notifyRewardAmount(
-        uint128 amount_,
-        uint56 warpTime,
-        uint8 stakeTimeAsDurationPercentage
-    ) public {
+    function testCorrectness_notifyRewardAmount(uint128 amount_, uint56 warpTime, uint8 stakeTimeAsDurationPercentage)
+        public
+    {
         vm.assume(amount_ > 0);
         vm.assume(warpTime > 0);
         vm.assume(stakeTimeAsDurationPercentage > 0);
@@ -329,8 +261,7 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
         // get earned reward amount from existing rewards
         uint256 beforeBalance = rewardToken.balanceOf(address(this));
         stakingPool.getReward();
-        uint256 rewardAmount = rewardToken.balanceOf(address(this)) -
-            beforeBalance;
+        uint256 rewardAmount = rewardToken.balanceOf(address(this)) - beforeBalance;
 
         // compute expected earned rewards
         uint256 expectedRewardAmount;
@@ -350,8 +281,7 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
         stakingPool.notifyRewardAmount(amount);
 
         // warp to simulate staking
-        uint256 stakeTime = (DURATION *
-            uint256(stakeTimeAsDurationPercentage)) / 100;
+        uint256 stakeTime = (DURATION * uint256(stakeTimeAsDurationPercentage)) / 100;
         vm.warp(warpTime + stakeTime);
 
         // get reward
@@ -365,17 +295,9 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
             expectedRewardAmount += leftoverRewardAmount + amount;
         } else {
             // during second reward period, rewards are partially distributed
-            expectedRewardAmount +=
-                ((leftoverRewardAmount + amount) *
-                    stakeTimeAsDurationPercentage) /
-                100;
+            expectedRewardAmount += ((leftoverRewardAmount + amount) * stakeTimeAsDurationPercentage) / 100;
         }
-        assertEqDecimalEpsilonBelow(
-            rewardAmount,
-            expectedRewardAmount,
-            18,
-            1e4
-        );
+        assertEqDecimalEpsilonBelow(rewardAmount, expectedRewardAmount, 18, 1e4);
     }
 
     function testFail_cannotReinitialize() public {
@@ -386,12 +308,7 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
     /// ERC721 compliance
     /// -----------------------------------------------------------------------
 
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) external pure override returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
         return this.onERC721Received.selector;
     }
 
@@ -399,11 +316,7 @@ contract ERC721StakingPoolTest is BaseTest, ERC721TokenReceiver {
     /// Utilities
     /// -----------------------------------------------------------------------
 
-    function _getIdList(uint256 startId, uint256 amount)
-        internal
-        pure
-        returns (uint256[] memory idList)
-    {
+    function _getIdList(uint256 startId, uint256 amount) internal pure returns (uint256[] memory idList) {
         idList = new uint256[](amount);
         for (uint256 i = startId; i < startId + amount; i++) {
             idList[i - startId] = i;

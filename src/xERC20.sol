@@ -39,16 +39,8 @@ contract xERC20 is CloneERC20, Ownable, Multicall, SelfPermit {
     /// -----------------------------------------------------------------------
 
     event RewardAdded(uint128 reward);
-    event Staked(
-        address indexed user,
-        uint256 stakeTokenAmount,
-        uint256 xERC20Amount
-    );
-    event Withdrawn(
-        address indexed user,
-        uint256 stakeTokenAmount,
-        uint256 xERC20Amount
-    );
+    event Staked(address indexed user, uint256 stakeTokenAmount, uint256 xERC20Amount);
+    event Withdrawn(address indexed user, uint256 stakeTokenAmount, uint256 xERC20Amount);
 
     /// -----------------------------------------------------------------------
     /// Constants
@@ -105,11 +97,7 @@ contract xERC20 is CloneERC20, Ownable, Multicall, SelfPermit {
     /// @notice Stake tokens to receive xERC20 tokens
     /// @param stakeTokenAmount The amount of tokens to stake
     /// @return xERC20Amount The amount of xERC20 tokens minted
-    function stake(uint256 stakeTokenAmount)
-        external
-        virtual
-        returns (uint256 xERC20Amount)
-    {
+    function stake(uint256 stakeTokenAmount) external virtual returns (uint256 xERC20Amount) {
         /// -----------------------------------------------------------------------
         /// Validation
         /// -----------------------------------------------------------------------
@@ -122,22 +110,14 @@ contract xERC20 is CloneERC20, Ownable, Multicall, SelfPermit {
         /// State updates
         /// -----------------------------------------------------------------------
 
-        xERC20Amount = FullMath.mulDiv(
-            stakeTokenAmount,
-            PRECISION,
-            getPricePerFullShare()
-        );
+        xERC20Amount = FullMath.mulDiv(stakeTokenAmount, PRECISION, getPricePerFullShare());
         _mint(msg.sender, xERC20Amount);
 
         /// -----------------------------------------------------------------------
         /// Effects
         /// -----------------------------------------------------------------------
 
-        stakeToken().safeTransferFrom(
-            msg.sender,
-            address(this),
-            stakeTokenAmount
-        );
+        stakeToken().safeTransferFrom(msg.sender, address(this), stakeTokenAmount);
 
         emit Staked(msg.sender, stakeTokenAmount, xERC20Amount);
     }
@@ -145,11 +125,7 @@ contract xERC20 is CloneERC20, Ownable, Multicall, SelfPermit {
     /// @notice Withdraw tokens by burning xERC20 tokens
     /// @param xERC20Amount The amount of xERC20 to burn
     /// @return stakeTokenAmount The amount of staked tokens withdrawn
-    function withdraw(uint256 xERC20Amount)
-        external
-        virtual
-        returns (uint256 stakeTokenAmount)
-    {
+    function withdraw(uint256 xERC20Amount) external virtual returns (uint256 stakeTokenAmount) {
         /// -----------------------------------------------------------------------
         /// Validation
         /// -----------------------------------------------------------------------
@@ -161,11 +137,7 @@ contract xERC20 is CloneERC20, Ownable, Multicall, SelfPermit {
         /// -----------------------------------------------------------------------
         /// State updates
         /// -----------------------------------------------------------------------
-        stakeTokenAmount = FullMath.mulDiv(
-            xERC20Amount,
-            getPricePerFullShare(),
-            PRECISION
-        );
+        stakeTokenAmount = FullMath.mulDiv(xERC20Amount, getPricePerFullShare(), PRECISION);
         _burn(msg.sender, xERC20Amount);
 
         /// -----------------------------------------------------------------------
@@ -194,10 +166,7 @@ contract xERC20 is CloneERC20, Ownable, Multicall, SelfPermit {
         }
         uint256 lastRewardAmount_ = lastRewardAmount;
         uint256 currentUnlockEndTimestamp_ = currentUnlockEndTimestamp;
-        if (
-            lastRewardAmount_ == 0 ||
-            block.timestamp >= currentUnlockEndTimestamp_
-        ) {
+        if (lastRewardAmount_ == 0 || block.timestamp >= currentUnlockEndTimestamp_) {
             // no rewards or rewards fully unlocked
             // entire balance is withdrawable
             return FullMath.mulDiv(stakeTokenBalance, PRECISION, totalShares);
@@ -206,15 +175,9 @@ contract xERC20 is CloneERC20, Ownable, Multicall, SelfPermit {
             // deduct locked rewards from balance
             uint256 lastRewardTimestamp_ = lastRewardTimestamp;
             // can't overflow since lockedRewardAmount < lastRewardAmount
-            uint256 lockedRewardAmount = (lastRewardAmount_ *
-                (currentUnlockEndTimestamp_ - block.timestamp)) /
-                (currentUnlockEndTimestamp_ - lastRewardTimestamp_);
-            return
-                FullMath.mulDiv(
-                    stakeTokenBalance - lockedRewardAmount,
-                    PRECISION,
-                    totalShares
-                );
+            uint256 lockedRewardAmount = (lastRewardAmount_ * (currentUnlockEndTimestamp_ - block.timestamp))
+                / (currentUnlockEndTimestamp_ - lastRewardTimestamp_);
+            return FullMath.mulDiv(stakeTokenBalance - lockedRewardAmount, PRECISION, totalShares);
         }
     }
 
@@ -254,9 +217,8 @@ contract xERC20 is CloneERC20, Ownable, Multicall, SelfPermit {
         } else {
             // add rewards to current reward period
             // can't overflow since lockedRewardAmount < lastRewardAmount
-            uint256 lockedRewardAmount = (lastRewardAmount *
-                (currentUnlockEndTimestamp_ - block.timestamp)) /
-                (currentUnlockEndTimestamp_ - lastRewardTimestamp);
+            uint256 lockedRewardAmount = (lastRewardAmount * (currentUnlockEndTimestamp_ - block.timestamp))
+                / (currentUnlockEndTimestamp_ - lastRewardTimestamp);
             // will revert if lastRewardAmount overflows
             lastRewardAmount = uint128(rewardAmount + lockedRewardAmount);
         }
@@ -275,10 +237,7 @@ contract xERC20 is CloneERC20, Ownable, Multicall, SelfPermit {
     /// Reward distributors can call notifyRewardAmount()
     /// @param rewardDistributor The account to add/remove
     /// @param isRewardDistributor_ True to add the account, false to remove the account
-    function setRewardDistributor(
-        address rewardDistributor,
-        bool isRewardDistributor_
-    ) external onlyOwner {
+    function setRewardDistributor(address rewardDistributor, bool isRewardDistributor_) external onlyOwner {
         isRewardDistributor[rewardDistributor] = isRewardDistributor_;
     }
 }
